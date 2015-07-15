@@ -1,8 +1,12 @@
-This is a Gen2 UHF RFID Reader. It is able to identify commercial GEN2 RFID Tags with FM0 line coding and 40kHz data rate (BLF) and extract their EPC message. It requires USRPN200 and was tested with a single front-end card (RFX900).
+This is a Gen2 UHF RFID Reader. It is able to identify commercial GEN2 RFID Tags with FM0 line coding and 40kHz data rate (BLF) and extract their EPC 
+message.It requires USRPN200 and was tested with a single front-end card (RFX900).
 Developed by Nikos Kargas in the context of his MSc thesis,
 School of Electronic & Computer Engineering, Technical Univ. of Crete.  
 
-The project was initially based on the RFID Gen 2 Reader available at https://www.cgran.org/wiki/Gen2 (Contributor: Michael Buettner). To make it compatible with the latest version of Gnuradio and UHD as well as USRPN200 I decided to write a Gen2 Reader from scratch borrowing elements from the Reader developed by Buettner i.e. Data flow: Gate -> Decoder -> Reader as well as the conception regarding the detection of the reader commands. CRC calculation and checking functions were also adapted from https://www.cgran.org/browser/projects/gen2_rfid/
+The project was initially based on the RFID Gen 2 Reader available at https://www.cgran.org/wiki/Gen2 (Contributor: Michael Buettner). To make it compatible
+with the latest version of Gnuradio and UHD as well as USRPN200 I decided to write a Gen2 Reader from scratch borrowing elements from the Reader developed by
+Buettner i.e. Data flow: Gate -> Decoder -> Reader as well as the conception regarding the detection of the reader commands. CRC calculation and checking
+functions were also adapted from https://www.cgran.org/browser/projects/gen2_rfid/
 
 Implemented Gnuradio Blocks:
   Gate: Responsible for reader command detection.
