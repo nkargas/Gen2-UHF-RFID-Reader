@@ -26,7 +26,7 @@ Installation instructions:
   install UHD driver + GNU Radio using 
   wget http://www.sbrac.org/files/build-gnuradio && chmod a+x ./build-gnuradio && ./build-gnuradio
 
-  cd RFID_Reader/gr-rfid/
+  cd Gen2-UHF-RFID-Reader/gr-rfid/
   mkdir build
   cd build/
   cmake ../ (logging should be enabled)
@@ -35,7 +35,7 @@ Installation instructions:
 How to run:
 
   Real time execution :
-    cd RFID_Reader/gr-rfid/apps/
+    cd Gen2-UHF-RFID-Reader/gr-rfid/apps/
     sudo GR_SCHEDULER=STS nice -n -20 python ./reader.py 
     After termination, part of EPC message (hex value of EPC[104:111]) of identified Tags is printed 
 
