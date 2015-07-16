@@ -45,7 +45,7 @@ class reader_top_block(gr.top_block):
     gr.top_block.__init__(self)
 
 
-    rt = gr.enable_realtime_scheduling() # sets highest priority (nice -n -20)
+    #rt = gr.enable_realtime_scheduling() 
 
     ######## Variables #########
     self.dac_rate = 1e6                 # DAC rate 
