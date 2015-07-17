@@ -383,7 +383,7 @@ namespace gr {
             }
 
             
-            GR_LOG_INFO(d_debug_logger, "EPC FAIL TO DECODE" << reader_state->reader_stats.n_queries_sent);  
+            GR_LOG_INFO(d_debug_logger, "EPC FAIL TO DECODE");  
           }
         }
         else

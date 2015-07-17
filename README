@@ -41,6 +41,8 @@ How to run:
 
   To run with offline data : 
     change DEBUG variable in apps/reader.py to TRUE (A test file already exists named file_source_test)
+    The reader works with offline traces without using a USRP.
+
     output after running with test file:
 
      --------------------------
@@ -61,14 +63,14 @@ How to run:
     /misc/code/plot_signal.m   # Plot using Matlab/Octave
 
 How logging works:
-     Configuration file : /home/username/.gnuradio/config.conf
+    Configuration file : /home/username/.gnuradio/config.conf
     Edit the above file and add the following lines
 
     [LOG]
     debug_file = /PathToLogFile/Filename
     debug_level = info 
 
-    --logging may cause latency issues 
+    --logging may cause latency issues if it is enabled during real time execution. However it can be used with offline traces.
 
 Hardware:
   1x USRPN200
