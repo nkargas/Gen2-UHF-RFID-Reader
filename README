@@ -77,6 +77,10 @@ Hardware:
   1x RFX900 daughterboard
   2x circular polarized antennas
 
+For more information:
+  N. Kargas, F. Mavromatis and A. Bletsas, "Fully-Coherent Reader with Commodity SDR for Gen2 FM0 and Computational RFID",
+  accepted to IEEE Wireless Communications Letters (WCL)
+
 Tested on:
   Ubuntu 14.04 64-bit
   GNU Radio 3.7.4  
