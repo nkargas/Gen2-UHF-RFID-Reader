@@ -1,4 +1,4 @@
-#Developed by: Nikos Kargas (e-mail1: nkargas@isc.tuc.gr e-mail2: cpznick@gmail.com)
+#Developed by: Nikos Kargas 
 
 from gnuradio import gr
 from gnuradio import uhd
@@ -26,6 +26,7 @@ class reader_top_block(gr.top_block):
     self.source.set_center_freq(self.freq, 0)
     self.source.set_gain(self.rx_gain, 0)
     self.source.set_antenna("RX2", 0)
+    #self.source.set_auto_dc_offset(False) # Uncomment this line for SBX daughterboard
 
   # Configure usrp sink
   def u_sink(self):
