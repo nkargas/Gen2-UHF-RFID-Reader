@@ -25,6 +25,7 @@
 #include <gnuradio/io_signature.h>
 #include <gnuradio/prefs.h>
 #include <gnuradio/math.h>
+#include <cmath>
 #include <sys/time.h>
 #include "tag_decoder_impl.h"
 
@@ -56,11 +57,8 @@ namespace gr {
 
       char_bits = (char *) malloc( sizeof(char) * 128);
 
-       n_samples_TAG_BIT = TAG_BIT_D * s_rate / pow(10,6);      
+      n_samples_TAG_BIT = TAG_BIT_D * s_rate / pow(10,6);      
       GR_LOG_INFO(d_logger, "Number of samples of Tag bit : "<< n_samples_TAG_BIT);
-       pulse_bit.resize(n_samples_TAG_BIT);
-      std::fill_n(pulse_bit.begin(),   pulse_bit.size()/2,  1);
-      std::fill_n(pulse_bit.begin() + pulse_bit.size()/2 , pulse_bit.size()/2 , -1);
     }
 
     /*
@@ -91,7 +89,7 @@ namespace gr {
         // sync after matched filter (equivalent)
         for (int j = 0; j < 2 * TAG_PREAMBLE_BITS; j ++)
         {
-          corr2 = corr2 + in[i+j*n_samples_TAG_BIT/2] * gr_complex(TAG_PREAMBLE[j],0);
+          corr2 = corr2 + in[ (int) (i+j*n_samples_TAG_BIT/2) ] * gr_complex(TAG_PREAMBLE[j],0);
         }
         corr = std::norm(corr2);
         if (corr > max)
@@ -102,7 +100,7 @@ namespace gr {
       }  
 
        // Preamble ({1,1,-1,1,-1,-1,1,-1,-1,-1,1,1} 1 2 4 7 11 12)) 
-      h_est = (in[max_index] + in[max_index + n_samples_TAG_BIT/2] + in[max_index + 3*n_samples_TAG_BIT/2] + in[max_index + 6*n_samples_TAG_BIT/2] + in[max_index + 10*n_samples_TAG_BIT/2] + in[max_index + 11*n_samples_TAG_BIT/2])/std::complex<float>(6,0);  
+      h_est = (in[max_index] + in[ (int) (max_index + n_samples_TAG_BIT/2) ] + in[ (int) (max_index + 3*n_samples_TAG_BIT/2) ] + in[ (int) (max_index + 6*n_samples_TAG_BIT/2)] + in[(int) (max_index + 10*n_samples_TAG_BIT/2) ] + in[ (int) (max_index + 11*n_samples_TAG_BIT/2)])/std::complex<float>(6,0);  
 
 
       // Shifted received waveform by n_samples_TAG_BIT/2
@@ -235,10 +233,12 @@ namespace gr {
         produce(1,written_sync);
         */
 
-        for (int j = RN16_index; j < ninput_items[0]; j += pulse_bit.size()/2 )
+
+        for (float j = RN16_index; j < ninput_items[0]; j += n_samples_TAG_BIT/2 )
         {
           number_of_half_bits++;
-          RN16_samples_complex.push_back(in[j]);
+          int k = round(j);
+          RN16_samples_complex.push_back(in[k]);
 
           //out_2[written_sync] = in[j];
            //written_sync ++;
@@ -261,7 +261,7 @@ namespace gr {
           for(int bit=0; bit<RN16_bits.size(); bit++)
           {
             out[written] =  RN16_bits[bit];
-             written ++;
+            written ++;
           }
           produce(0,written);
           reader_state->gen2_logic_status = SEND_ACK;

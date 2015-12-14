@@ -34,7 +34,8 @@ namespace rfid {
   {
     private:
     
-      int n_samples_TAG_BIT, s_rate;
+      float n_samples_TAG_BIT;
+      int s_rate;
       std::vector<float> pulse_bit;
       float T_global;
       gr_complex h_est;
