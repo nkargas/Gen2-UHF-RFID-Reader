@@ -79,7 +79,9 @@ After termination, part of EPC message (hex value of EPC[104:111]) of identified
 ### Update:
 
 To run with a SBX daugherboard, uncomment the line #self.source.set_auto_dc_offset(False) in reader.py file.
-  
+
+14/12/15: Fixed a small issue in tag decoding. 
+
 ## Tested on:
   Ubuntu 14.04 64-bit  
   GNU Radio 3.7.4
