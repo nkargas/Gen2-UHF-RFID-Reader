@@ -12,6 +12,7 @@ The project was initially based on the RFID Gen2 Reader available at https://git
 
 ## Installation
 
+- install log4cpp (http://log4cpp.sourceforge.net/)
 - install UHD driver + GNU Radio using **wget http://www.sbrac.org/files/build-gnuradio && chmod a+x ./build-gnuradio && ./build-gnuradio**
 - cd Gen2-UHF-RFID-Reader/gr-rfid/  
 - mkdir build  
