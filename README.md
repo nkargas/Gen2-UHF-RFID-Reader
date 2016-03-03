@@ -89,7 +89,7 @@ To run with a SBX daugherboard, uncomment the line #self.source.set_auto_dc_offs
   GNU Radio 3.7.4
   
 ## For more information:
-N. Kargas, F. Mavromatis and A. Bletsas, "Fully-Coherent Reader with Commodity SDR for Gen2 FM0 and Computational RFID", accepted for publication, IEEE Wireless Communications Letters (WCL), Vol. 4, No. 6, pp. 617-620, Dec. 2015. 
+N. Kargas, F. Mavromatis and A. Bletsas, "Fully-Coherent Reader with Commodity SDR for Gen2 FM0 and Computational RFID", IEEE Wireless Communications Letters (WCL), Vol. 4, No. 6, pp. 617-620, Dec. 2015. 
 
 ## Contact:
   Nikos Kargas (e-mail1: cpznick@gmail.com email2: karga005@umn.edu)  
