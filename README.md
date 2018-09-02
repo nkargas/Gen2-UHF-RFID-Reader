@@ -1,14 +1,13 @@
 # Gen2 UHF RFID Reader
-This is a Gen2 UHF RFID Reader. It is able to identify commercial Gen2 RFID Tags with FM0 line coding and 40kHz data rate (BLF), and extract their EPC message. It requires USRPN200 and was tested with a single front-end card (RFX900).  
-Developed by Nikos Kargas in the context of his MSc thesis, School of Electronic & Computer Engineering, Technical Univ. of Crete.  
+This is a Gen2 UHF RFID Reader. It is able to identify commercial Gen2 RFID Tags with FM0 line coding and 40kHz data rate (BLF), and extract their EPC. It requires USRPN200 and a RFX900 or SBX daughterboard.  
 
-The project was initially based on the RFID Gen2 Reader available at https://github.com/ransford/gen2_rfid (previously at https://www.cgran.org/wiki/Gen2 Contributor: Michael Buettner). In order to make it compatible with the latest version of GNU Radio, UHD as well as USRPN200, I decided to write a Gen2 Reader from scratch. The reader borrows elements from the software developed by Buettner, i.e. Data flow: Gate -> Decoder -> Reader as well as the conception regarding the detection of the reader commands. CRC calculation and checking functions were also adapted from https://www.cgran.org/browser/projects/gen2_rfid/.
+The project is based on the RFID Gen2 Reader available at https://github.com/ransford/gen2_rfid. The reader borrows elements from the software developed by Buettner, i.e. Data flow: Gate -> Decoder -> Reader as well as the conception regarding the detection of the reader commands. CRC calculation and checking functions were also adapted from https://www.cgran.org/browser/projects/gen2_rfid/.
 
 ### Implemented GNU Radio Blocks:
 
 - Gate : Responsible for reader command detection.  
 - Tag decoder : Responsible for frame synchronization, channel estimation, symbol period estimation and detection.  
-- Reader (Gen2 Logic) : Create/send reader commands.
+- Reader : Create/send reader commands.
 
 ## Installation
 
@@ -33,6 +32,7 @@ The project was initially based on the RFID Gen2 Reader available at https://git
 ## How to run
 
 - Real time execution:  
+If you use an SBX daughterboard uncomment  #self.source.set_auto_dc_offset(False) in reader.py file
 cd Gen2-UHF-RFID-Reader/gr-rfid/apps/    
 sudo GR_SCHEDULER=STS nice -n -20 python ./reader.py     
 After termination, part of EPC message (hex value of EPC[104:111]) of identified Tags is printed.  
@@ -48,19 +48,7 @@ After termination, part of EPC message (hex value of EPC[104:111]) of identified
     | Correctly decoded EPC : 70  
     | Number of unique tags : 1  
     | Tag ID : 27  Num of reads : 70  
-
-
-    #### Output files 
-    
-    /misc/data/source  
-    /misc/data/matched_filter  
-    /misc/data/gate 
-    /misc/data/decoder  
-    /misc/data/reader
-    
-    #### Plot using Octave/MATLAB
-    /misc/code/plot_signal.m       
-    
+ 
 ## Logging
 
 - Configuration file : /home/username/.gnuradio/config.conf  
@@ -70,28 +58,46 @@ After termination, part of EPC message (hex value of EPC[104:111]) of identified
     debug_file = /PathToLogFile/Filename  
     debug_level = info  
     
-    Logging may cause latency issues if it is enabled during real time execution. However, it can be used with offline traces.
+    Logging may cause latency issues if it is enabled during real time execution!
+
+## Debugging  
+
+The reader may fail to decode a tag response for the following reasons
+
+1) Latency: For real time execution you should disable the output on the terminal. If you see debug messages, you should either install log4cpp or comment the corresponding lines in the source code e.g., GR_LOG_INFO(d_debug_logger, "EPC FAIL TO DECODE");
+
+2) Antenna placement. Place the antennas side by side with a distance of 50-100cm between them and the tag 2m (it can detect a tag up to 6m) away facing the antennas.
+
+3) Parameter tuning. The most important is self.ampl which controls the power of the transmitted signal (takes values between 0 and 1).
+
+If the reader still fails to decode tag responses, uncomment the following line in reader.py file
+
+ #self.connect(self.source, self.file_sink_source)
+
+Run the software for a few seconds (~5s). A file will be created in misc/data directory named source. This file contains the received samples. You can plot the amplitude of the received samples using the script located in misc/code folder. The figure should be similar to the .eps figure included in the folder. Plotting the figure can give some indication regarding the problem. You can also plot the output of any block by uncommenting the corresponding line in the reader.py file. Output files will be created in misc/data folder:
+
+- /misc/data/source  
+- /misc/data/matched_filter  
+- /misc/data/gate 
+- /misc/data/decoder  
+- /misc/data/reader
+    
+
     
 ## Hardware:
 
   - 1x USRPN200/N210  
-  - 1x RFX900 daughterboard  
+  - 1x RFX900/SBX daughterboard  
   - 2x circular polarized antennas  
-  
-### Update:
-
-To run with a SBX daugherboard, uncomment the line #self.source.set_auto_dc_offset(False) in reader.py file.
-
-14/12/15: Fixed a small issue in tag decoding. 
 
 ## Tested on:
   Ubuntu 14.04 64-bit  
   GNU Radio 3.7.4
   
-## For more information:
+## Please cite:
 N. Kargas, F. Mavromatis and A. Bletsas, "Fully-Coherent Reader with Commodity SDR for Gen2 FM0 and Computational RFID", IEEE Wireless Communications Letters (WCL), Vol. 4, No. 6, pp. 617-620, Dec. 2015. 
 
 ## Contact:
-  Nikos Kargas (e-mail1: cpznick@gmail.com email2: karga005@umn.edu)  
+  Nikos Kargas (email: karga005@umn.edu)  
 
 This research has been co-financed by the European Union (European Social Fund-ESF) and Greek national funds through the Operational Program Education and Lifelong Learning of the National Strategic Reference Framework (NSRF) - Research Funding Program: THALES-Investing in knowledge society through the European Social Fund.
