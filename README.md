@@ -94,7 +94,7 @@ Run the software for a few seconds (~5s). A file will be created in misc/data di
   Ubuntu 14.04 64-bit  
   GNU Radio 3.7.4
   
-## Please cite:
+## If you use this software please cite:
 N. Kargas, F. Mavromatis and A. Bletsas, "Fully-Coherent Reader with Commodity SDR for Gen2 FM0 and Computational RFID", IEEE Wireless Communications Letters (WCL), Vol. 4, No. 6, pp. 617-620, Dec. 2015. 
 
 ## Contact:
