@@ -1,17 +1,17 @@
 /* -*- c++ -*- */
-/* 
+/*
  * Copyright 2015 <Nikos Kargas (nkargas@isc.tuc.gr)>.
- * 
+ *
  * This is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 3, or (at your option)
  * any later version.
- * 
+ *
  * This software is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this software; see the file COPYING.  If not, write to
  * the Free Software Foundation, Inc., 51 Franklin Street,
@@ -37,8 +37,10 @@ namespace gr {
       int q_change; // 0-> increment, 1-> unchanged, 2-> decrement
       void gen_query_adjust_bits();
       void crc_append(std::vector<float> & q);
-      void gen_query_bits();
+      int gen_query_bits();
       void gen_ack_bits(const float * in);
+
+      int timestamp;
 
     public:
       void print_results();
@@ -58,4 +60,3 @@ namespace gr {
 } // namespace gr
 
 #endif /* INCLUDED_RFID_READER_IMPL_H */
-
