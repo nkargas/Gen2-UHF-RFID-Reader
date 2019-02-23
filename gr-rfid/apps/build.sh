@@ -1,4 +1,5 @@
 #! /bin/sh
+git pull origin 190221_patch
 cd ../build
 make
 make test

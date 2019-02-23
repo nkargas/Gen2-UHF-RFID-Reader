@@ -89,15 +89,21 @@ namespace gr {
 
     const bool P_DOWN = false;
 
+    const int T_READER_FREQ = 40000;     // BLF = 40kHz
+
     // Duration in us
+    const int DR          = 8;
+    const float BLF_D     = T_READER_FREQ / pow(10,6);  // 0.04
+    const int TPRI_D      = 1 / BLF_D;  // 25us
+    const int PW_D        = 12; // Half Tari
+    const int RTCAL_D     = 6 * PW_D; // 72us
+    const int TRCAL_D     = DR / BLF_D; // 200us
+    const int T1_D        = max(RTCAL_D, 10 * TPRI_D);  // 250us
+    const int T2_D        = 20 * TPRI_D;  // 500us
+
     const int CW_D         = 250;    // Carrier wave
     const int P_DOWN_D     = 2000;    // power down
-    const int T1_D         = 40;//200;    // Time from Interrogator transmission to Tag response (250 us)
-    const int T2_D         = 480;    // Time from Tag response to Interrogator transmission. Max value = 20.0 * T_tag = 500us
-    const int PW_D         = 12;      // Half Tari
     const int DELIM_D       = 12;      // A preamble shall comprise a fixed-length start delimiter 12.5us +/-5%
-    const int TRCAL_D     = 200;    // BLF = DR/TRCAL => 40e3 = 8/TRCAL => TRCAL = 200us
-    const int RTCAL_D     = 72;      // 6*PW = 72us
 
     const int NUM_PULSES_COMMAND = 5;       // Number of pulses to detect a reader command
     const int NUMBER_UNIQUE_TAGS = 100;      // Stop after NUMBER_UNIQUE_TAGS have been read
@@ -111,10 +117,10 @@ namespace gr {
     const int QUERY_LENGTH        = 22;  // Query length in bits
     const int EXTRA_BITS          = 10; // extra bits to ungate
 
-    const int T_READER_FREQ = 40000;     // BLF = 40kHz
-    const float TAG_BIT_D   = 1.0/T_READER_FREQ * pow(10,6); // Duration in us
-    const int RN16_D        = (RN16_BITS + TAG_PREAMBLE_BITS) * TAG_BIT_D;
-    const int EPC_D          = (EPC_BITS  + TAG_PREAMBLE_BITS) * TAG_BIT_D;
+    // Duration in us
+    const int RN16_D       = (RN16_BITS + TAG_PREAMBLE_BITS) * TPRI_D;  // 575us
+    const int EPC_D        = (EPC_BITS  + TAG_PREAMBLE_BITS) * TPRI_D;  // 3,375us
+
     // Query command
     const int QUERY_CODE[4] = {1,0,0,0};
     const int M[2]          = {0,0};
