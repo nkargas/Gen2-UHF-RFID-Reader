@@ -92,13 +92,13 @@ namespace gr {
     const int T_READER_FREQ = 40000;     // BLF = 40kHz
 
     // Duration in us
-    const int DR          = 8;
+    const int DR_D          = 8;
     const float BLF_D     = T_READER_FREQ / pow(10,6);  // 0.04
     const int TPRI_D      = 1 / BLF_D;  // 25us
     const int PW_D        = 12; // Half Tari
     const int RTCAL_D     = 6 * PW_D; // 72us
-    const int TRCAL_D     = DR / BLF_D; // 200us
-    const int T1_D        = max(RTCAL_D, 10 * TPRI_D);  // 250us
+    const int TRCAL_D     = DR_D / BLF_D; // 200us
+    const int T1_D        = std::max(RTCAL_D, 10 * TPRI_D);  // 250us
     const int T2_D        = 20 * TPRI_D;  // 500us
 
     const int CW_D         = 250;    // Carrier wave

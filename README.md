@@ -137,6 +137,10 @@ N. Kargas, F. Mavromatis and A. Bletsas, "Fully-Coherent Reader with Commodity S
 Jeong SinGi (e-mail: jsgnwk@csi.skku.edu)  
 Computer Science and Intelligence Lab in Sungkyunkwan University, Suwon, Republic of Korea(ROK, South Korea).
 
+ * Co-developed with
+Lee JiHoon (e-mail: ulla4571@csi.skku.edu)
+Computer Science and Intelligence Lab in Sungkyunkwan University, Suwon, Republic of Korea(ROK, South Korea).
+
  * Co-worked with  
 Shin JaeMin (e-mail: alex9395@csi.skku.edu)  
 Computer Science and Intelligence Lab in Sungkyunkwan University, Suwon, Republic of Korea(ROK, South Korea).

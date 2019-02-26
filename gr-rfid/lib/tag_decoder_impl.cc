@@ -57,7 +57,7 @@ namespace gr
     {
       char_bits = (char *) malloc( sizeof(char) * 128);
 
-      n_samples_TAG_BIT = TAG_BIT_D * s_rate / pow(10,6);
+      n_samples_TAG_BIT = TPRI_D * s_rate / pow(10,6);
       //GR_LOG_INFO(d_logger, "Number of samples of Tag bit : "<< n_samples_TAG_BIT);
     }
 

@@ -174,6 +174,13 @@ namespace gr
 
     }
 
+    int reader_impl::calc_usec(const struct timeval start, const struct timeval end)
+    {
+      int sec = end.tv_sec - start.tv_sec;
+      int usec = sec * 1e6;
+      return usec + end.tv_usec - start.tv_usec;
+    }
+
     void reader_impl::print_results()
     {
       std::ofstream result(result_file_path, std::ios::out);

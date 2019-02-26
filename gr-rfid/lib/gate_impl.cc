@@ -49,7 +49,7 @@ namespace gr
     {
       n_samples_T1       = T1_D       * (sample_rate / pow(10,6));
       n_samples_PW       = PW_D       * (sample_rate / pow(10,6));
-      n_samples_TAG_BIT  = TAG_BIT_D  * (sample_rate / pow(10,6));
+      n_samples_TAG_BIT  = TPRI_D  * (sample_rate / pow(10,6));
 
       win_length = WIN_SIZE_D * (sample_rate/ pow(10,6));
       dc_length  = DC_SIZE_D  * (sample_rate / pow(10,6));
