@@ -1,4 +1,4 @@
-# Gen2 UHF RFID Reader with WISP
+# Gen2 UHF RFID Reader
 This program is revised version of the Gen2 UHF RFID Reader (https://github.com/nkargas/Gen2-UHF-RFID-Reader) developed by Nikos Kargas (https://github.com/nkargas). It can communicate with the programmable RFID Tag with FM0 encoding and 40kHz data rate.
 
 ## Hardware
@@ -15,14 +15,14 @@ Get more information at below WISP wiki website.
 
 ## Installation
 1. Install the UHD driver and GNU Radio program. Use below instruction to check the success of the hardware installation.
-<pre><code>$ uhd_find_devices`</code></pre>
+<pre><code>$ uhd_find_devices</code></pre>
 
 2. Visit below and check the latest release of this program. Copy the link of the source code.
- * https://github.com/SpiritFlag/Gen2-UHF-RFID-Reader-with-WISP/releases
+ * https://github.com/SpiritFlag/Gen2-UHF-RFID-Reader/releases
 
 3. Download the source code.
-<pre><code>$ wget https://github.com/SpiritFlag/Gen2-UHF-RFID-Reader-with-WISP/archive/(version).zip
-$ wget https://github.com/SpiritFlag/Gen2-UHF-RFID-Reader-with-WISP/archive/(version).tar.gz</code></pre>
+<pre><code>$ wget https://github.com/SpiritFlag/Gen2-UHF-RFID-Reader/archive/(version).zip
+$ wget https://github.com/SpiritFlag/Gen2-UHF-RFID-Reader/archive/(version).tar.gz</code></pre>
 
 4. Unzip the ".zip" or ".tar.gz" file.
 <pre><code>$ unzip *
@@ -137,8 +137,8 @@ N. Kargas, F. Mavromatis and A. Bletsas, "Fully-Coherent Reader with Commodity S
 Jeong SinGi (e-mail: jsgnwk@csi.skku.edu)  
 Computer Science and Intelligence Lab in Sungkyunkwan University, Suwon, Republic of Korea(ROK, South Korea).
 
- * Co-developed with
-Lee JiHoon (e-mail: ulla4571@csi.skku.edu)
+ * Co-developed with  
+Lee JiHoon (e-mail: ulla4571@csi.skku.edu)  
 Computer Science and Intelligence Lab in Sungkyunkwan University, Suwon, Republic of Korea(ROK, South Korea).
 
  * Co-worked with  
