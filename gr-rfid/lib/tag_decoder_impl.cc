@@ -174,7 +174,6 @@ namespace gr
     // index: start point of "data bit", do not decrease half bit!
     // mask_level: start level of "decoding bit". (-1)low level start, (1)high level start.
     {
-      std::ofstream time("time/time", std::ios::app);
       const float masks[2][2][4] = { // first, last elements are extra bits. second, third elements are real signal.
         {{1, -1, 1, -1}, {1, -1, -1, 1}}, // low level start
         {{-1, 1, -1, 1}, {-1, 1, 1, -1}}  // high level start
@@ -185,31 +184,24 @@ namespace gr
       float max_corr = 0.0f;
       int max_index = -1;
 
-      clock_t start, end;
-      start = clock();
-
       float average_amp = 0.0f;
       for(int j=-(n_samples_TAG_BIT*0.5) ; j<(n_samples_TAG_BIT*1.5) ; j++)
         average_amp += norm_in[index+j];
-      average_amp /= (int)(2*n_samples_TAG_BIT);
+      average_amp /= (2*n_samples_TAG_BIT);
 
-      float average_abs_amp = 0.0f;
-      for (int j=-(n_samples_TAG_BIT*0.5); j<(n_samples_TAG_BIT*1.5); j++)
-          average_abs_amp += abs(norm_in[index+j] - average_amp);
-      average_abs_amp /= (int)(2*n_samples_TAG_BIT);
-
-      // comepare with two masks (0 or 1)
+      // compare with two masks (0 or 1)
       for(int i=0 ; i<2 ; i++)
       {
         float corr = 0.0f;
-        for(int j=0; j<4; j++)
+        for(int j=-(n_samples_TAG_BIT*0.5) ; j<(n_samples_TAG_BIT*1.5) ; j++)
         {
-          int start = index + (j-1)*(n_samples_TAG_BIT*0.5);
-          for(int k=0 ; k<(n_samples_TAG_BIT*0.5) ; k++)
-          {
-            float scaled_amp = (norm_in[start+k] - average_amp) / average_abs_amp;
-            corr += masks[mask_level][i][j] * scaled_amp;
-          }
+          int idx;
+          if(j < 0) idx = 0;                            // first section (trailing half bit of the previous bit)
+          else if(j < (n_samples_TAG_BIT*0.5)) idx = 1; // second section (leading half bit of the data bit)
+          else if(j < n_samples_TAG_BIT) idx = 2;       // third section (trailing half bit of the data bit)
+          else idx = 3;                                 // forth section (leading half bit of the later bit)
+
+          corr += masks[mask_level][i][idx] * (norm_in[index+j] - average_amp);
         }
 
         if(corr > max_corr)
@@ -218,13 +210,8 @@ namespace gr
           max_index = i;
         }
       }
-      max_corr /= n_samples_TAG_BIT*2;
+
       (*ret_corr) = max_corr;
-
-      end = clock();
-      time << ((double)(end-start)/CLOCKS_PER_SEC) << std::endl;
-      time.close();
-
       return max_index;
     }
 
@@ -236,32 +223,27 @@ namespace gr
 
       int mask_level = determine_first_mask_level(norm_in, index);
       int shift = 0;
-      float threshold = 0.8f;
 
       for(int i=0 ; i<n_expected_bit ; i++)
       {
         int idx = index + i*n_samples_TAG_BIT + shift;  // start point of decoding bit with shifting
         float max_corr = 0.0f;
         int max_index;
-        int curr_shift = 0;
+        int curr_shift;
 
-        max_index = decode_single_bit(norm_in, idx, mask_level, &max_corr);
-        if (max_corr < threshold)
+        // shifting from idx-SHIFT_SIZE to idx+SHIFT_SIZE
+        for(int j=0 ; j<(SHIFT_SIZE*2 + 1) ; j++)
         {
-          for (int j=0; j<(SHIFT_SIZE*2+1); j++)
-          {
-            float corr = 0.0f;
-            int index = decode_single_bit(norm_in, idx+j-SHIFT_SIZE, mask_level, &corr);
+          float corr = 0.0f;
+          int index = decode_single_bit(norm_in, idx+j-SHIFT_SIZE, mask_level, &corr);
 
-            if (corr > max_corr)
-            {
-              max_corr = corr;
-              max_index = index;
-              curr_shift = j - SHIFT_SIZE;
-            }
+          if(corr > max_corr)
+          {
+            max_corr = corr;
+            max_index = index;
+            curr_shift = j - SHIFT_SIZE;  // find the best current shift value
           }
         }
-        shift += curr_shift;
 
         #ifdef DEBUG_MESSAGE
         {
@@ -280,6 +262,7 @@ namespace gr
         if(max_index) mask_level *= -1; // change mask_level(start level of the next bit) when the decoded bit is 1
 
         decoded_bits.push_back(max_index);
+        shift += curr_shift;  // update the shift value
       }
 
       return decoded_bits;
@@ -478,6 +461,7 @@ namespace gr
           log.open("debug_message", std::ios::app);
           log << "│ Preamble detected!" << std::endl;
           log.close();
+
           std::vector<float> EPC_bits = tag_detection(norm_in, EPC_index, EPC_BITS-1);  // EPC_BITS includes one dummy bit
 
           // convert EPC_bits from float to char in order to use Buettner's function

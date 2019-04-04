@@ -63,7 +63,7 @@ rx_gain: RX gain
 tx_gain: TX gain
 
  * line 61~62:  
-Change addr value with the address of your USRP reader. (default: 192.168.1.2)
+Change addr value with the address of your USRP reader. (default: 192.168.255.3)
 
 ### gr-rfid/include/global_vars.h
  * line 29: DEBUG_MESSAGE  
@@ -73,7 +73,7 @@ Annotate this line, if you don't want to make the debug files. (dafault: annotat
 The number of slot is fixed by 2^(FIXED_Q). (default FIXED_Q: 0 / default slot number: 1)
 
  * line 79: MAX_NUM_QUERIES  
-The program stops after sending this amount of queries. (dafault: 100000)
+The program stops after sending this amount of queries. (dafault: 1000)
 
  * line 159: result_file_path  
 Set the name of the result file. You have to change reader.sh file also. (default: result)

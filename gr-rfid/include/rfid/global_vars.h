@@ -76,7 +76,7 @@ namespace gr {
 
     // Termination criteria
     // const int MAX_INVENTORY_ROUND = 50;
-    const int MAX_NUM_QUERIES     = 100000;     // Stop after MAX_NUM_QUERIES have been sent
+    const int MAX_NUM_QUERIES     = 1000;     // Stop after MAX_NUM_QUERIES have been sent
 
     // valid values for Q
     const int Q_VALUE [16][4] =
