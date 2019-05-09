@@ -52,14 +52,14 @@ class reader_top_block(gr.top_block):
     ######## Variables #########
     self.dac_rate = 1e6                 # DAC rate
     self.adc_rate = 100e6/50            # ADC rate (2MS/s complex samples)
-    self.decim     = 1                    # Decimation (downsampling factor)
+    self.decim     = 1                     # Decimation (downsampling factor)
     self.ampl     = 0.55                  # Output signal amplitude (signal power vary for different RFX900 cards)
     self.freq     = 910e6                # Modulation frequency (can be set between 902-920)
     self.rx_gain   = 0                   # RX Gain (gain at receiver)
     self.tx_gain   = 20                    # RFX900 no Tx gain option
 
-    self.usrp_address_source = "addr=192.168.1.2,recv_frame_size=256"
-    self.usrp_address_sink   = "addr=192.168.1.2,recv_frame_size=256"
+    self.usrp_address_source = "addr=192.168.255.3,recv_frame_size=256"
+    self.usrp_address_sink   = "addr=192.168.255.3,recv_frame_size=256"
 
     # Each FM0 symbol consists of ADC_RATE/BLF samples (2e6/40e3 = 50 samples)
     # 10 samples per symbol after matched filtering and decimation

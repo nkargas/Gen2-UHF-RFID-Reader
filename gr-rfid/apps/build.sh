@@ -1,4 +1,4 @@
-#! /bin/sh
+#git pull origin 
 cd ../build
 make
 make test
