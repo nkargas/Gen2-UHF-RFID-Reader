@@ -26,7 +26,7 @@
 #include <sys/time.h>
 #include <fstream>
 
-//#define DEBUG_MESSAGE
+#define DEBUG_MESSAGE
 
 namespace gr {
   namespace rfid {

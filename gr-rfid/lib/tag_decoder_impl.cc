@@ -336,6 +336,15 @@ namespace gr
             debug << in[RN16_index+i].imag() << " ";
           debug << std::endl << "\t\t\t\t\t** RN16 samples **" << std::endl << std::endl << std::endl << std::endl;
           debug.close();
+
+          debug.open((debug_message+"RN16_iq/"+std::to_string(reader_state->reader_stats.cur_inventory_round)+"_"+std::to_string(reader_state->reader_stats.cur_slot_number)+"_i").c_str(), std::ios::app);
+          for(int i=0 ; i<n_samples_TAG_BIT*(RN16_BITS-1) ; i++)
+            debug << in[RN16_index+i].real() << " ";
+          debug.close();
+          debug.open((debug_message+"RN16_iq/"+std::to_string(reader_state->reader_stats.cur_inventory_round)+"_"+std::to_string(reader_state->reader_stats.cur_slot_number)+"_q").c_str(), std::ios::app);
+          for(int i=0 ; i<n_samples_TAG_BIT*(RN16_BITS-1) ; i++)
+            debug << in[RN16_index+i].imag() << " ";
+          debug.close();
         }
         #endif
 
