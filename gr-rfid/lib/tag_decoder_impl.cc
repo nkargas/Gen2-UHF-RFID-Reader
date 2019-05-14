@@ -127,17 +127,10 @@ namespace gr
         }
       }
 
-      #ifdef DEBUG_MESSAGE
-      {
-        std::ofstream debug((debug_message+std::to_string(reader_state->reader_stats.cur_inventory_round)+"_"+std::to_string(reader_state->reader_stats.cur_slot_number)).c_str(), std::ios::app);
-        debug << "threshold= " << threshold << ", corr= " << max_corr << ", index=" << max_index << std::endl;
-        debug << "\t\t\t\t\t** preamble samples **" << std::endl;
-        for(int i=0 ; i<win_size ; i++)
-          debug << norm_in[max_index+i] << " ";
-        debug << std::endl << "\t\t\t\t\t** preamble samples **" << std::endl << std::endl << std::endl << std::endl;
-        debug.close();
-      }
-      #endif
+      debug_log << "threshold= " << threshold << std::endl;
+      debug_log << "corr= " << max_corr << std::endl;
+      debug_log << "preamble index= " << max_index << std::endl;
+      debug_log << "sample index= " << max_index + win_size << std::endl;
 
       // check if correlation value exceeds threshold
       if(max_corr > threshold) return max_index + win_size;
@@ -245,19 +238,13 @@ namespace gr
           }
         }
 
-        #ifdef DEBUG_MESSAGE
-        {
-          std::ofstream debug((debug_message+std::to_string(reader_state->reader_stats.cur_inventory_round)+"_"+std::to_string(reader_state->reader_stats.cur_slot_number)).c_str(), std::ios::app);
-          debug << "[" << i+1 << "th bit] corr=" << max_corr << ", curr_shift=" << curr_shift << ", shift=" << shift << ", decoded_bit=" << max_index;
-          if(mask_level) debug << " (high start)" << std::endl;
-          else debug << " (low start)" << std::endl;
-          debug << "\t\t\t\t\t** shifted bit samples **" << std::endl;
-          for(int j=idx-SHIFT_SIZE ; j<idx+n_samples_TAG_BIT+SHIFT_SIZE ; j++)
-            debug << norm_in[i] << " ";
-          debug << std::endl << "\t\t\t\t\t** shifted bit samples **" << std::endl << std::endl << std::endl << std::endl;
-          debug.close();
-        }
-        #endif
+        debug_log << "[" << i+1 << "th bit]\tcorr=";
+        debug_log << std::left << std::setw(8) << max_corr;
+        debug_log << "\tcurr_shift=" << curr_shift << "\tshift=";
+        debug_log << std::left << std::setw(5) << shift;
+        debug_log << "\tdecoded_bit=" << max_index;
+        if(mask_level) debug_log << " (high start)" << std::endl;
+        else debug_log << " (low start)" << std::endl;
 
         if(max_index) mask_level *= -1; // change mask_level(start level of the next bit) when the decoded bit is 1
 
@@ -280,9 +267,7 @@ namespace gr
       int consumed = 0;
 
       std::ofstream log;
-      #ifdef DEBUG_MESSAGE
-      std::ofstream debug;
-      #endif
+      current_round_slot = (std::to_string(reader_state->reader_stats.cur_inventory_round)+"_"+std::to_string(reader_state->reader_stats.cur_slot_number)).c_str();
 
       // convert from complex value to float value
       for(int i=0 ; i<ninput_items[0] ; i++)
@@ -291,60 +276,62 @@ namespace gr
       // Processing only after n_samples_to_ungate are available and we need to decode an RN16
       if(reader_state->decoder_status == DECODER_DECODE_RN16 && ninput_items[0] >= reader_state->n_samples_to_ungate)
       {
-        #ifdef DEBUG_MESSAGE
-        {
-          debug.open((debug_message+std::to_string(reader_state->reader_stats.cur_inventory_round)+"_"+std::to_string(reader_state->reader_stats.cur_slot_number)).c_str(), std::ios::app);
-          debug << "n_samples_to_ungate= " << reader_state->n_samples_to_ungate << ", ninput_items[0]= " << ninput_items[0] << std::endl;
-          debug << "\t\t\t\t\t** samples from gate **" << std::endl;
-          for(int i=0 ; i<ninput_items[0] ; i++)
-            debug << norm_in[i] << " ";
-          debug << std::endl << "\t\t\t\t\t** samples from gate **" << std::endl << std::endl << std::endl << std::endl;
-          debug.close();
+        log.open(log_file_path, std::ios::app);
+        debug_log.open((debug_folder_path+"log/"+current_round_slot).c_str(), std::ios::app);
 
-          debug.open((debug_message+std::to_string(reader_state->reader_stats.cur_inventory_round)+"_"+std::to_string(reader_state->reader_stats.cur_slot_number)+"_iq").c_str(), std::ios::app);
-          debug << "n_samples_to_ungate= " << reader_state->n_samples_to_ungate << ", ninput_items[0]= " << ninput_items[0] << std::endl;
-          debug << "\t\t\t\t\t** samples from gate (I) **" << std::endl;
+        debug_log << "cur_inventory_round= " << reader_state->reader_stats.cur_inventory_round << std::endl;
+        debug_log << "cur_slot_number= " << reader_state->reader_stats.cur_slot_number << std::endl << std::endl;
+
+        debug_log << "##### DECODER_DECODE_RN16 #####" << std::endl;
+        debug_log << "n_samples_to_ungate= " << reader_state->n_samples_to_ungate << std::endl;
+        debug_log << "ninput_items[0]= " << ninput_items[0] << std::endl;
+
+        #ifdef DEBUG_DECODER_RN16
+        {
+          debug_decoder_RN16_i.open((debug_folder_path+"RN16_input/"+current_round_slot+"_I").c_str(), std::ios::app);
+          debug_decoder_RN16_q.open((debug_folder_path+"RN16_input/"+current_round_slot+"_Q").c_str(), std::ios::app);
+          debug_decoder_RN16.open((debug_folder_path+"RN16_input/"+current_round_slot).c_str(), std::ios::app);
           for(int i=0 ; i<ninput_items[0] ; i++)
-            debug << in[i].real() << " ";
-          debug << std::endl << "\t\t\t\t\t** samples from gate **" << std::endl << std::endl << std::endl << std::endl;
-          debug << "\t\t\t\t\t** samples from gate (Q) **" << std::endl;
-          for(int i=0 ; i<ninput_items[0] ; i++)
-            debug << in[i].imag() << " ";
-          debug << std::endl << "\t\t\t\t\t** samples from gate **" << std::endl << std::endl << std::endl << std::endl;
-          debug.close();
+          {
+            debug_decoder_RN16_i << in[i].real() << " ";
+            debug_decoder_RN16_q << in[i].imag() << " ";
+            debug_decoder_RN16 << norm_in[i] << " ";
+          }
+          debug_decoder_RN16_i.close();
+          debug_decoder_RN16_q.close();
+          debug_decoder_RN16.close();
         }
         #endif
 
         // detect preamble
         int RN16_index = tag_sync(norm_in, ninput_items[0]);  //find where the tag data bits start
-        #ifdef DEBUG_MESSAGE
+        #ifdef DEBUG_DECODER_RN16
         {
-          debug.open((debug_message+std::to_string(reader_state->reader_stats.cur_inventory_round)+"_"+std::to_string(reader_state->reader_stats.cur_slot_number)).c_str(), std::ios::app);
-          debug << "\t\t\t\t\t** RN16 samples **" << std::endl;
-          for(int i=0 ; i<n_samples_TAG_BIT*(RN16_BITS-1) ; i++)
-            debug << norm_in[RN16_index+i] << " ";
-          debug << std::endl << "\t\t\t\t\t** RN16 samples **" << std::endl << std::endl << std::endl << std::endl;
-          debug.close();
+          debug_decoder_RN16_i.open((debug_folder_path+"RN16_preamble/"+current_round_slot+"_I").c_str(), std::ios::app);
+          debug_decoder_RN16_q.open((debug_folder_path+"RN16_preamble/"+current_round_slot+"_Q").c_str(), std::ios::app);
+          debug_decoder_RN16.open((debug_folder_path+"RN16_preamble/"+current_round_slot).c_str(), std::ios::app);
+          for(int i=-n_samples_TAG_BIT*TAG_PREAMBLE_BITS ; i<0 ; i++)
+          {
+            debug_decoder_RN16_i << in[RN16_index+i].real() << " ";
+            debug_decoder_RN16_q << in[RN16_index+i].imag() << " ";
+            debug_decoder_RN16 << norm_in[RN16_index+i] << " ";
+          }
+          debug_decoder_RN16_i.close();
+          debug_decoder_RN16_q.close();
+          debug_decoder_RN16.close();
 
-          debug.open((debug_message+std::to_string(reader_state->reader_stats.cur_inventory_round)+"_"+std::to_string(reader_state->reader_stats.cur_slot_number)+"_iq").c_str(), std::ios::app);
-          debug << "\t\t\t\t\t** RN16 samples (I) **" << std::endl;
+          debug_decoder_RN16_i.open((debug_folder_path+"RN16_sample/"+current_round_slot+"_I").c_str(), std::ios::app);
+          debug_decoder_RN16_q.open((debug_folder_path+"RN16_sample/"+current_round_slot+"_Q").c_str(), std::ios::app);
+          debug_decoder_RN16.open((debug_folder_path+"RN16_sample/"+current_round_slot).c_str(), std::ios::app);
           for(int i=0 ; i<n_samples_TAG_BIT*(RN16_BITS-1) ; i++)
-            debug << in[RN16_index+i].real() << " ";
-          debug << std::endl << "\t\t\t\t\t** RN16 samples **" << std::endl << std::endl << std::endl << std::endl;
-          debug << "\t\t\t\t\t** RN16 samples (Q) **" << std::endl;
-          for(int i=0 ; i<n_samples_TAG_BIT*(RN16_BITS-1) ; i++)
-            debug << in[RN16_index+i].imag() << " ";
-          debug << std::endl << "\t\t\t\t\t** RN16 samples **" << std::endl << std::endl << std::endl << std::endl;
-          debug.close();
-
-          debug.open((debug_message+"RN16_iq/"+std::to_string(reader_state->reader_stats.cur_inventory_round)+"_"+std::to_string(reader_state->reader_stats.cur_slot_number)+"_i").c_str(), std::ios::app);
-          for(int i=0 ; i<n_samples_TAG_BIT*(RN16_BITS-1) ; i++)
-            debug << in[RN16_index+i].real() << " ";
-          debug.close();
-          debug.open((debug_message+"RN16_iq/"+std::to_string(reader_state->reader_stats.cur_inventory_round)+"_"+std::to_string(reader_state->reader_stats.cur_slot_number)+"_q").c_str(), std::ios::app);
-          for(int i=0 ; i<n_samples_TAG_BIT*(RN16_BITS-1) ; i++)
-            debug << in[RN16_index+i].imag() << " ";
-          debug.close();
+          {
+            debug_decoder_RN16_i << in[RN16_index+i].real() << " ";
+            debug_decoder_RN16_q << in[RN16_index+i].imag() << " ";
+            debug_decoder_RN16 << norm_in[RN16_index+i] << " ";
+          }
+          debug_decoder_RN16_i.close();
+          debug_decoder_RN16_q.close();
+          debug_decoder_RN16.close();
         }
         #endif
 
@@ -357,33 +344,37 @@ namespace gr
         // decode RN16
         if(RN16_index != -1)
         {
-          log.open("debug_message", std::ios::app);
           log << "│ Preamble detected!" << std::endl;
-          log.close();
           std::vector<float> RN16_bits = tag_detection(norm_in, RN16_index, RN16_BITS-1);  // RN16_BITS includes one dummy bit
 
           // write RN16_bits to the next block
-          log.open("debug_message", std::ios::app);
           log << "│ RN16=";
+          debug_log << "RN16= ";
           int written = 0;
           for(int i=0 ; i<RN16_bits.size() ; i++)
           {
-            if(i % 4 == 0) std::cout << " ";
-            log << RN16_bits[i];
             out[written++] = RN16_bits[i];
+
+            if(i % 4 == 0)
+            {
+              log << " ";
+              debug_log << " ";
+            }
+            log << RN16_bits[i];
+            debug_log << RN16_bits[i];
           }
+          debug_log << std::endl << std::endl;
           produce(0, written);
 
           // go to the next state
           log << std::endl << "├──────────────────────────────────────────────────" << std::endl;
-          log.close();
           std::cout << "RN16 decoded | ";
           reader_state->gen2_logic_status = SEND_ACK;
         }
         else  // fail to detect preamble
         {
-          log.open("debug_message", std::ios::app);
           log << "│ Preamble detection fail.." << std::endl;
+          debug_log << "Preamble detection fail" << std::endl << std::endl;
           std::cout << "\t\t\t\t\tPreamble FAIL!!";
 
           reader_state->reader_stats.cur_slot_number++;
@@ -400,8 +391,10 @@ namespace gr
             log << "├──────────────────────────────────────────────────" << std::endl;
             reader_state->gen2_logic_status = SEND_QUERY_REP;
           }
-          log.close();
         }
+
+        log.close();
+        debug_log.close();
 
         // process for GNU RADIO
         consumed = reader_state->n_samples_to_ungate;
@@ -410,51 +403,60 @@ namespace gr
       // Processing only after n_samples_to_ungate are available and we need to decode an EPC
       else if (reader_state->decoder_status == DECODER_DECODE_EPC && ninput_items[0] >= reader_state->n_samples_to_ungate )
       {
-        #ifdef DEBUG_MESSAGE
-        {
-          debug.open((debug_message+std::to_string(reader_state->reader_stats.cur_inventory_round)+"_"+std::to_string(reader_state->reader_stats.cur_slot_number)).c_str(), std::ios::app);
-          debug << "n_samples_to_ungate= " << reader_state->n_samples_to_ungate << ", ninput_items[0]= " << ninput_items[0] << std::endl;
-          debug << "\t\t\t\t\t** samples from gate **" << std::endl;
-          for(int i=0 ; i<ninput_items[0] ; i++)
-            debug << norm_in[i] << " ";
-          debug << std::endl << "\t\t\t\t\t** samples from gate **" << std::endl << std::endl << std::endl << std::endl;
-          debug.close();
+        log.open(log_file_path, std::ios::app);
+        debug_log.open((debug_folder_path+"log/"+current_round_slot).c_str(), std::ios::app);
 
-          debug.open((debug_message+std::to_string(reader_state->reader_stats.cur_inventory_round)+"_"+std::to_string(reader_state->reader_stats.cur_slot_number)+"_iq").c_str(), std::ios::app);
-          debug << "n_samples_to_ungate= " << reader_state->n_samples_to_ungate << ", ninput_items[0]= " << ninput_items[0] << std::endl;
-          debug << "\t\t\t\t\t** samples from gate (I) **" << std::endl;
+        debug_log << "##### DECODER_DECODE_EPC #####" << std::endl;
+        debug_log << "n_samples_to_ungate= " << reader_state->n_samples_to_ungate << std::endl;
+        debug_log << "ninput_items[0]= " << ninput_items[0] << std::endl;
+
+        #ifdef DEBUG_DECODER_EPC
+        {
+          debug_decoder_EPC_i.open((debug_folder_path+"EPC_input/"+current_round_slot+"_I").c_str(), std::ios::app);
+          debug_decoder_EPC_q.open((debug_folder_path+"EPC_input/"+current_round_slot+"_Q").c_str(), std::ios::app);
+          debug_decoder_EPC.open((debug_folder_path+"EPC_input/"+current_round_slot).c_str(), std::ios::app);
           for(int i=0 ; i<ninput_items[0] ; i++)
-            debug << in[i].real() << " ";
-          debug << std::endl << "\t\t\t\t\t** samples from gate **" << std::endl << std::endl << std::endl << std::endl;
-          debug << "\t\t\t\t\t** samples from gate (Q) **" << std::endl;
-          for(int i=0 ; i<ninput_items[0] ; i++)
-            debug << in[i].imag() << " ";
-          debug << std::endl << "\t\t\t\t\t** samples from gate **" << std::endl << std::endl << std::endl << std::endl;
-          debug.close();
+          {
+            debug_decoder_EPC_i << in[i].real() << " ";
+            debug_decoder_EPC_q << in[i].imag() << " ";
+            debug_decoder_EPC << norm_in[i] << " ";
+          }
+          debug_decoder_EPC_i.close();
+          debug_decoder_EPC_q.close();
+          debug_decoder_EPC.close();
         }
         #endif
 
         // detect preamble
         int EPC_index = tag_sync(norm_in, ninput_items[0]);
-        #ifdef DEBUG_MESSAGE
-        {
-          debug.open((debug_message+std::to_string(reader_state->reader_stats.cur_inventory_round)+"_"+std::to_string(reader_state->reader_stats.cur_slot_number)).c_str(), std::ios::app);
-          debug << "\t\t\t\t\t** EPC samples **" << std::endl;
-          for(int i=0 ; i<n_samples_TAG_BIT*(EPC_BITS-1) ; i++)
-            debug << norm_in[EPC_index+i] << " ";
-          debug << std::endl << "\t\t\t\t\t** EPC samples **" << std::endl << std::endl << std::endl << std::endl;
-          debug.close();
 
-          debug.open((debug_message+std::to_string(reader_state->reader_stats.cur_inventory_round)+"_"+std::to_string(reader_state->reader_stats.cur_slot_number)+"_iq").c_str(), std::ios::app);
-          debug << "\t\t\t\t\t** EPC samples (I) **" << std::endl;
+        #ifdef DEBUG_DECODER_RN16
+        {
+          debug_decoder_EPC_i.open((debug_folder_path+"EPC_preamble/"+current_round_slot+"_I").c_str(), std::ios::app);
+          debug_decoder_EPC_q.open((debug_folder_path+"EPC_preamble/"+current_round_slot+"_Q").c_str(), std::ios::app);
+          debug_decoder_EPC.open((debug_folder_path+"EPC_preamble/"+current_round_slot).c_str(), std::ios::app);
+          for(int i=-n_samples_TAG_BIT*TAG_PREAMBLE_BITS ; i<0 ; i++)
+          {
+            debug_decoder_EPC_i << in[EPC_index+i].real() << " ";
+            debug_decoder_EPC_q << in[EPC_index+i].imag() << " ";
+            debug_decoder_EPC << norm_in[EPC_index+i] << " ";
+          }
+          debug_decoder_EPC_i.close();
+          debug_decoder_EPC_q.close();
+          debug_decoder_EPC.close();
+
+          debug_decoder_EPC_i.open((debug_folder_path+"EPC_sample/"+current_round_slot+"_I").c_str(), std::ios::app);
+          debug_decoder_EPC_q.open((debug_folder_path+"EPC_sample/"+current_round_slot+"_Q").c_str(), std::ios::app);
+          debug_decoder_EPC.open((debug_folder_path+"EPC_sample/"+current_round_slot).c_str(), std::ios::app);
           for(int i=0 ; i<n_samples_TAG_BIT*(EPC_BITS-1) ; i++)
-            debug << in[EPC_index+i].real() << " ";
-          debug << std::endl << "\t\t\t\t\t** EPC samples **" << std::endl << std::endl << std::endl << std::endl;
-          debug << "\t\t\t\t\t** EPC samples (Q) **" << std::endl;
-          for(int i=0 ; i<n_samples_TAG_BIT*(EPC_BITS-1) ; i++)
-            debug << in[EPC_index+i].imag() << " ";
-          debug << std::endl << "\t\t\t\t\t** EPC samples **" << std::endl << std::endl << std::endl << std::endl;
-          debug.close();
+          {
+            debug_decoder_EPC_i << in[EPC_index+i].real() << " ";
+            debug_decoder_EPC_q << in[EPC_index+i].imag() << " ";
+            debug_decoder_EPC << norm_in[EPC_index+i] << " ";
+          }
+          debug_decoder_EPC_i.close();
+          debug_decoder_EPC_q.close();
+          debug_decoder_EPC.close();
         }
         #endif
 
@@ -467,23 +469,29 @@ namespace gr
         // decode EPC
         if(EPC_index != -1)
         {
-          log.open("debug_message", std::ios::app);
           log << "│ Preamble detected!" << std::endl;
-          log.close();
 
           std::vector<float> EPC_bits = tag_detection(norm_in, EPC_index, EPC_BITS-1);  // EPC_BITS includes one dummy bit
 
           // convert EPC_bits from float to char in order to use Buettner's function
-          log.open("debug_message", std::ios::app);
           log << "│ EPC=";
+          debug_log << "EPC=";
           for(int i=0 ; i<EPC_bits.size() ; i++)
           {
-            if(i % 4 == 0) log << " ";
+            if(i % 4 == 0)
+            {
+              log << " ";
+              debug_log << " ";
+            }
             log << EPC_bits[i];
+            debug_log << EPC_bits[i];
             char_bits[i] = EPC_bits[i] + '0';
-            if(i % 16 == 15) log << std::endl << "│     ";
+            if(i % 16 == 15)
+            {
+              log << std::endl << "│     ";
+              debug_log << std::endl << "    ";
+            }
           }
-          log.close();
 
           // check CRC
           if(check_crc(char_bits, 128) == 1) // success to decode EPC
@@ -494,9 +502,8 @@ namespace gr
               tag_id += std::pow(2, 7-i) * EPC_bits[104+i];
 
             //GR_LOG_INFO(d_debug_logger, "EPC CORRECTLY DECODED, TAG ID : " << tag_id);
-            log.open("debug_message", std::ios::app);
             log << "CRC check success! Tag ID= " << tag_id << std::endl;
-            log.close();
+            debug_log << " Tag ID= " << tag_id << std::endl << std::endl;
             std::cout << "\t\t\t\t\t\t\t\t\t\tTag ID= " << tag_id;
             reader_state->reader_stats.n_epc_correct+=1;
 
@@ -509,22 +516,19 @@ namespace gr
           }
           else
           {
-            log.open("debug_message", std::ios::app);
             log << "│ CRC check fail.." << std::endl;
-            log.close();
+            debug_log << "CRC check fail" << std::endl << std::endl;
             std::cout << "\t\t\t\t\tCRC FAIL!!";
           }
         }
         else
         {
-          log.open("debug_message", std::ios::app);
           log << "│ Preamble detection fail.." << std::endl;
-          log.close();
+          debug_log << "Preamble detection fail" << std::endl << std::endl;
           std::cout << "\t\t\t\t\tPreamble FAIL!!";
         }
 
         // After EPC message send a query rep or query
-        log.open("debug_message", std::ios::app);
         reader_state->reader_stats.cur_slot_number++;
         if(reader_state->reader_stats.cur_slot_number > reader_state->reader_stats.max_slot_number)
         {
@@ -540,6 +544,7 @@ namespace gr
           reader_state->gen2_logic_status = SEND_QUERY_REP;
         }
         log.close();
+        debug_log.close();
 
         // process for GNU RADIO
         consumed = reader_state->n_samples_to_ungate;

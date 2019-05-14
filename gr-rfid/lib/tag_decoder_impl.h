@@ -27,9 +27,14 @@
 #include <time.h>
 #include <numeric>
 #include <fstream>
-namespace gr {
-  namespace rfid {
 
+#define DEBUG_DECODER_RN16
+#define DEBUG_DECODER_EPC
+
+namespace gr
+{
+  namespace rfid
+  {
     class tag_decoder_impl : public tag_decoder
     {
       private:
@@ -48,6 +53,20 @@ namespace gr {
         int decode_single_bit(float* in, int index, int mask_level, float* ret_corr);
         std::vector<float> tag_detection(float* in, int index, int n_expected_bit);
         int check_crc(char * bits, int num_bits);
+
+        // debug_message
+        std::string current_round_slot;
+        std::ofstream debug_log;
+        #ifdef DEBUG_DECODER_RN16
+        std::ofstream debug_decoder_RN16_i;
+        std::ofstream debug_decoder_RN16_q;
+        std::ofstream debug_decoder_RN16;
+        #endif
+        #ifdef DEBUG_DECODER_EPC
+        std::ofstream debug_decoder_EPC_i;
+        std::ofstream debug_decoder_EPC_q;
+        std::ofstream debug_decoder_EPC;
+        #endif
 
       public:
         tag_decoder_impl(int sample_rate, std::vector<int> output_sizes);

@@ -2,11 +2,11 @@
 rm -r debug_data
 mkdir debug_data
 cd debug_data
-mkdir RN16_iq
-cd RN16_iq
-mkdir graph
-cd ../../
-rm debug_message result
+mkdir log
+mkdir RN16_input RN16_preamble RN16_sample
+mkdir EPC_input EPC_preamble EPC_sample
+cd ../
+rm log result
 python reader.py
 cat result
 rm a
