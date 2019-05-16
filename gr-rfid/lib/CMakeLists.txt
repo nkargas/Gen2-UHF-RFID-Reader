@@ -29,7 +29,8 @@ list(APPEND rfid_sources
     global_vars.cc
     gate_impl.cc
     reader_impl.cc
-    tag_decoder_impl.cc 
+    tag_decoder_impl.cc
+    tag_decoder_class.cc
 )
 
 set(rfid_sources "${rfid_sources}" PARENT_SCOPE)

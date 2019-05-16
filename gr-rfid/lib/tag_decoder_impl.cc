@@ -42,40 +42,25 @@ namespace gr
       output_sizes.push_back(sizeof(float));
       output_sizes.push_back(sizeof(gr_complex));
 
-      return gnuradio::get_initial_sptr
-      (new tag_decoder_impl(sample_rate,output_sizes));
+      return gnuradio::get_initial_sptr(new tag_decoder_impl(sample_rate,output_sizes));
     }
 
-    /*
-    * The private constructor
-    */
     tag_decoder_impl::tag_decoder_impl(int sample_rate, std::vector<int> output_sizes)
-    : gr::block("tag_decoder",
-    gr::io_signature::make(1, 1, sizeof(gr_complex)),
-    gr::io_signature::makev(2, 2, output_sizes )),
-    s_rate(sample_rate)
+    : gr::block("tag_decoder", gr::io_signature::make(1, 1, sizeof(gr_complex)), gr::io_signature::makev(2, 2, output_sizes)), s_rate(sample_rate)
     {
-      char_bits = (char *) malloc( sizeof(char) * 128);
-
+      char_bits = new char[128];
       n_samples_TAG_BIT = TPRI_D * s_rate / pow(10,6);
       //GR_LOG_INFO(d_logger, "Number of samples of Tag bit : "<< n_samples_TAG_BIT);
     }
 
-    /*
-    * Our virtual destructor.
-    */
-    tag_decoder_impl::~tag_decoder_impl()
-    {
+    tag_decoder_impl::~tag_decoder_impl(){}
 
-    }
-
-    void
-    tag_decoder_impl::forecast (int noutput_items, gr_vector_int &ninput_items_required)
+    void tag_decoder_impl::forecast(int noutput_items, gr_vector_int& ninput_items_required)
     {
       ninput_items_required[0] = noutput_items;
     }
 
-    int tag_decoder_impl::tag_sync(float* norm_in, int size)
+    int tag_decoder_impl::tag_sync(sample_information* ys)
     // This method searches the preamble and returns the start index of the tag data.
     // If the correlation value exceeds the threshold, it returns the start index of the tag data.
     // Else, it returns -1.
@@ -88,18 +73,18 @@ namespace gr
       int max_index = 0;
 
       // compare all samples with sliding
-      for(int i=0 ; i<size-win_size ; i++)  // i: start point
+      for(int i=0 ; i<ys->total_size()-win_size ; i++)  // i: start point
       {
         // calculate average_amp (threshold)
         float average_amp = 0.0f;
         for(int j=0 ; j<win_size ; j++)
-          average_amp += norm_in[i+j];
+          average_amp += ys->norm_in(i+j);
         average_amp /= win_size;
 
         // calculate normalize_factor
         float standard_deviation = 0.0f;
         for(int j=0 ; j<win_size ; j++)
-          standard_deviation += pow(norm_in[i+j] - average_amp, 2);
+          standard_deviation += pow(ys->norm_in(i+j) - average_amp, 2);
         standard_deviation /= win_size;
         standard_deviation = sqrt(standard_deviation);
 
@@ -110,7 +95,7 @@ namespace gr
           for(int k=0 ; k<(n_samples_TAG_BIT/2.0) ; k++)
           {
             for(int m=0 ; m<2 ; m++)  // m: index of TAG_PREAMBLE type
-                corr_candidates[m] += TAG_PREAMBLE[m][j] * ((norm_in[i + j*(int)(n_samples_TAG_BIT/2.0) + k] - average_amp) / standard_deviation);
+                corr_candidates[m] += TAG_PREAMBLE[m][j] * ((ys->norm_in(i + j*(int)(n_samples_TAG_BIT/2.0) + k) - average_amp) / standard_deviation);
           }
         }
 
@@ -137,32 +122,21 @@ namespace gr
       else return -1;
     }
 
-    int tag_decoder_impl::determine_first_mask_level(float* norm_in, int index)
+    int tag_decoder_impl::determine_first_mask_level(sample_information* ys, int index)
     // This method searches whether the first bit starts with low level or high level.
     // If the first bit starts with low level, it returns -1.
     // If the first bit starts with high level, it returns 0.
     // index: start point of "data bit", do not decrease half bit!
     {
-      float max_max_corr = 0.0f;
-      int max_max_index = -1;
+      decode_single_bit(ys, index, -1);
+      float low_level_corr = ys->corr();
 
-      for(int k=0 ; k<2 ; k++)
-      {
-        float max_corr = 0.0f;
-        int max_index = decode_single_bit(norm_in, index, k, &max_corr);
-
-        if(max_corr > max_max_corr)
-        {
-          max_max_corr = max_corr;
-          max_max_index = k;
-        }
-      }
-
-      if(max_max_index == 0) max_max_index = -1;
-      return max_max_index;
+      decode_single_bit(ys, index, 1);
+      if(low_level_corr > ys->corr()) return -1;
+      else return 1;
     }
 
-    int tag_decoder_impl::decode_single_bit(float* norm_in, int index, int mask_level, float* ret_corr)
+    int tag_decoder_impl::decode_single_bit(sample_information* ys, int index, int mask_level)
     // This method decodes single bit and returns the decoded value and the correlation score.
     // index: start point of "data bit", do not decrease half bit!
     // mask_level: start level of "decoding bit". (-1)low level start, (1)high level start.
@@ -179,7 +153,7 @@ namespace gr
 
       float average_amp = 0.0f;
       for(int j=-(n_samples_TAG_BIT*0.5) ; j<(n_samples_TAG_BIT*1.5) ; j++)
-        average_amp += norm_in[index+j];
+        average_amp += ys->norm_in(index+j);
       average_amp /= (2*n_samples_TAG_BIT);
 
       // compare with two masks (0 or 1)
@@ -194,7 +168,7 @@ namespace gr
           else if(j < n_samples_TAG_BIT) idx = 2;       // third section (trailing half bit of the data bit)
           else idx = 3;                                 // forth section (leading half bit of the later bit)
 
-          corr += masks[mask_level][i][idx] * (norm_in[index+j] - average_amp);
+          corr += masks[mask_level][i][idx] * (ys->norm_in(index+j) - average_amp);
         }
 
         if(corr > max_corr)
@@ -204,17 +178,17 @@ namespace gr
         }
       }
 
-      (*ret_corr) = max_corr;
+      ys->set_corr(max_corr);
       return max_index;
     }
 
-    std::vector<float> tag_decoder_impl::tag_detection(float* norm_in, int index, int n_expected_bit)
+    std::vector<float> tag_decoder_impl::tag_detection(sample_information* ys, int index, int n_expected_bit)
     // This method decodes n_expected_bit of data by using previous methods, and returns the vector of the decoded data.
     // index: start point of "data bit", do not decrease half bit!
     {
       std::vector<float> decoded_bits;
 
-      int mask_level = determine_first_mask_level(norm_in, index);
+      int mask_level = determine_first_mask_level(ys, index);
       int shift = 0;
 
       for(int i=0 ; i<n_expected_bit ; i++)
@@ -227,8 +201,8 @@ namespace gr
         // shifting from idx-SHIFT_SIZE to idx+SHIFT_SIZE
         for(int j=0 ; j<(SHIFT_SIZE*2 + 1) ; j++)
         {
-          float corr = 0.0f;
-          int index = decode_single_bit(norm_in, idx+j-SHIFT_SIZE, mask_level, &corr);
+          int index = decode_single_bit(ys, idx+j-SHIFT_SIZE, mask_level);
+          float corr = ys->corr();
 
           if(corr > max_corr)
           {
@@ -255,23 +229,15 @@ namespace gr
       return decoded_bits;
     }
 
-    int
-    tag_decoder_impl::general_work (int noutput_items,
-      gr_vector_int &ninput_items,
-      gr_vector_const_void_star &input_items,
-      gr_vector_void_star &output_items)
+    int tag_decoder_impl::general_work(int noutput_items, gr_vector_int& ninput_items, gr_vector_const_void_star& input_items, gr_vector_void_star& output_items)
     {
-      const gr_complex *in = (const  gr_complex *) input_items[0];
-      float *norm_in = new float[ninput_items[0]];
       float *out = (float *) output_items[0];
       int consumed = 0;
 
+      sample_information ys ((gr_complex*)input_items[0], ninput_items[0]);
+
       std::ofstream log;
       current_round_slot = (std::to_string(reader_state->reader_stats.cur_inventory_round)+"_"+std::to_string(reader_state->reader_stats.cur_slot_number)).c_str();
-
-      // convert from complex value to float value
-      for(int i=0 ; i<ninput_items[0] ; i++)
-        norm_in[i] = std::sqrt(std::norm(in[i]));
 
       // Processing only after n_samples_to_ungate are available and we need to decode an RN16
       if(reader_state->decoder_status == DECODER_DECODE_RN16 && ninput_items[0] >= reader_state->n_samples_to_ungate)
@@ -293,9 +259,9 @@ namespace gr
           debug_decoder_RN16.open((debug_folder_path+"RN16_input/"+current_round_slot).c_str(), std::ios::app);
           for(int i=0 ; i<ninput_items[0] ; i++)
           {
-            debug_decoder_RN16_i << in[i].real() << " ";
-            debug_decoder_RN16_q << in[i].imag() << " ";
-            debug_decoder_RN16 << norm_in[i] << " ";
+            debug_decoder_RN16_i << ys.in(i).real() << " ";
+            debug_decoder_RN16_q << ys.in(i).imag() << " ";
+            debug_decoder_RN16 << ys.norm_in(i) << " ";
           }
           debug_decoder_RN16_i.close();
           debug_decoder_RN16_q.close();
@@ -304,7 +270,7 @@ namespace gr
         #endif
 
         // detect preamble
-        int RN16_index = tag_sync(norm_in, ninput_items[0]);  //find where the tag data bits start
+        int RN16_index = tag_sync(&ys);  //find where the tag data bits start
         #ifdef DEBUG_DECODER_RN16
         {
           debug_decoder_RN16_i.open((debug_folder_path+"RN16_preamble/"+current_round_slot+"_I").c_str(), std::ios::app);
@@ -312,9 +278,9 @@ namespace gr
           debug_decoder_RN16.open((debug_folder_path+"RN16_preamble/"+current_round_slot).c_str(), std::ios::app);
           for(int i=-n_samples_TAG_BIT*TAG_PREAMBLE_BITS ; i<0 ; i++)
           {
-            debug_decoder_RN16_i << in[RN16_index+i].real() << " ";
-            debug_decoder_RN16_q << in[RN16_index+i].imag() << " ";
-            debug_decoder_RN16 << norm_in[RN16_index+i] << " ";
+            debug_decoder_RN16_i << ys.in(RN16_index+i).real() << " ";
+            debug_decoder_RN16_q << ys.in(RN16_index+i).imag() << " ";
+            debug_decoder_RN16 << ys.norm_in(RN16_index+i) << " ";
           }
           debug_decoder_RN16_i.close();
           debug_decoder_RN16_q.close();
@@ -325,9 +291,9 @@ namespace gr
           debug_decoder_RN16.open((debug_folder_path+"RN16_sample/"+current_round_slot).c_str(), std::ios::app);
           for(int i=0 ; i<n_samples_TAG_BIT*(RN16_BITS-1) ; i++)
           {
-            debug_decoder_RN16_i << in[RN16_index+i].real() << " ";
-            debug_decoder_RN16_q << in[RN16_index+i].imag() << " ";
-            debug_decoder_RN16 << norm_in[RN16_index+i] << " ";
+            debug_decoder_RN16_i << ys.in(RN16_index+i).real() << " ";
+            debug_decoder_RN16_q << ys.in(RN16_index+i).imag() << " ";
+            debug_decoder_RN16 << ys.norm_in(RN16_index+i) << " ";
           }
           debug_decoder_RN16_i.close();
           debug_decoder_RN16_q.close();
@@ -345,7 +311,7 @@ namespace gr
         if(RN16_index != -1)
         {
           log << "│ Preamble detected!" << std::endl;
-          std::vector<float> RN16_bits = tag_detection(norm_in, RN16_index, RN16_BITS-1);  // RN16_BITS includes one dummy bit
+          std::vector<float> RN16_bits = tag_detection(&ys, RN16_index, RN16_BITS-1);  // RN16_BITS includes one dummy bit
 
           // write RN16_bits to the next block
           log << "│ RN16=";
@@ -417,9 +383,9 @@ namespace gr
           debug_decoder_EPC.open((debug_folder_path+"EPC_input/"+current_round_slot).c_str(), std::ios::app);
           for(int i=0 ; i<ninput_items[0] ; i++)
           {
-            debug_decoder_EPC_i << in[i].real() << " ";
-            debug_decoder_EPC_q << in[i].imag() << " ";
-            debug_decoder_EPC << norm_in[i] << " ";
+            debug_decoder_EPC_i << ys.in(i).real() << " ";
+            debug_decoder_EPC_q << ys.in(i).imag() << " ";
+            debug_decoder_EPC << ys.norm_in(i) << " ";
           }
           debug_decoder_EPC_i.close();
           debug_decoder_EPC_q.close();
@@ -428,7 +394,7 @@ namespace gr
         #endif
 
         // detect preamble
-        int EPC_index = tag_sync(norm_in, ninput_items[0]);
+        int EPC_index = tag_sync(&ys);
 
         #ifdef DEBUG_DECODER_RN16
         {
@@ -437,9 +403,9 @@ namespace gr
           debug_decoder_EPC.open((debug_folder_path+"EPC_preamble/"+current_round_slot).c_str(), std::ios::app);
           for(int i=-n_samples_TAG_BIT*TAG_PREAMBLE_BITS ; i<0 ; i++)
           {
-            debug_decoder_EPC_i << in[EPC_index+i].real() << " ";
-            debug_decoder_EPC_q << in[EPC_index+i].imag() << " ";
-            debug_decoder_EPC << norm_in[EPC_index+i] << " ";
+            debug_decoder_EPC_i << ys.in(EPC_index+i).real() << " ";
+            debug_decoder_EPC_q << ys.in(EPC_index+i).imag() << " ";
+            debug_decoder_EPC << ys.norm_in(EPC_index+i) << " ";
           }
           debug_decoder_EPC_i.close();
           debug_decoder_EPC_q.close();
@@ -450,9 +416,9 @@ namespace gr
           debug_decoder_EPC.open((debug_folder_path+"EPC_sample/"+current_round_slot).c_str(), std::ios::app);
           for(int i=0 ; i<n_samples_TAG_BIT*(EPC_BITS-1) ; i++)
           {
-            debug_decoder_EPC_i << in[EPC_index+i].real() << " ";
-            debug_decoder_EPC_q << in[EPC_index+i].imag() << " ";
-            debug_decoder_EPC << norm_in[EPC_index+i] << " ";
+            debug_decoder_EPC_i << ys.in(EPC_index+i).real() << " ";
+            debug_decoder_EPC_q << ys.in(EPC_index+i).imag() << " ";
+            debug_decoder_EPC << ys.norm_in(EPC_index+i) << " ";
           }
           debug_decoder_EPC_i.close();
           debug_decoder_EPC_q.close();
@@ -471,7 +437,7 @@ namespace gr
         {
           log << "│ Preamble detected!" << std::endl;
 
-          std::vector<float> EPC_bits = tag_detection(norm_in, EPC_index, EPC_BITS-1);  // EPC_BITS includes one dummy bit
+          std::vector<float> EPC_bits = tag_detection(&ys, EPC_index, EPC_BITS-1);  // EPC_BITS includes one dummy bit
 
           // convert EPC_bits from float to char in order to use Buettner's function
           log << "│ EPC=";
@@ -549,7 +515,7 @@ namespace gr
         // process for GNU RADIO
         consumed = reader_state->n_samples_to_ungate;
       }
-      delete[] norm_in;
+
       consume_each(consumed);
       return WORK_CALLED_PRODUCE;
     }
