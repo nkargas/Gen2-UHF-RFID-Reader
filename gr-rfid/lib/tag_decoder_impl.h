@@ -46,11 +46,14 @@ namespace gr
             float corr(void);
         };
 
+        // tag_decoder_impl.cc
+        int check_crc(char*, int);
+
+        // tag_decoder_decoder.cc
         int tag_sync(sample_information*);
+        std::vector<float> tag_detection(sample_information*, int, int);
         int determine_first_mask_level(sample_information*, int);
         int decode_single_bit(sample_information* in, int, int);
-        std::vector<float> tag_detection(sample_information*, int, int);
-        int check_crc(char*, int);
 
         // debug_message
         std::string current_round_slot;
