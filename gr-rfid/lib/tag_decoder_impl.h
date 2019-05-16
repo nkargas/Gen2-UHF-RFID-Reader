@@ -1,4 +1,23 @@
 /* -*- c++ -*- */
+/*
+* Copyright 2015 <Nikos Kargas (nkargas@isc.tuc.gr)>.
+*
+* This is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation; either version 3, or (at your option)
+* any later version.
+*
+* This software is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this software; see the file COPYING.  If not, write to
+* the Free Software Foundation, Inc., 51 Franklin Street,
+* Boston, MA 02110-1301, USA.
+*/
+
 #ifndef INCLUDED_RFID_TAG_DECODER_IMPL_H
 #define INCLUDED_RFID_TAG_DECODER_IMPL_H
 
@@ -9,8 +28,9 @@
 #include <numeric>
 #include <fstream>
 
-#define DEBUG_DECODER_RN16
-#define DEBUG_DECODER_EPC
+#define DEBUG_TAG_DECODER_IMPL_INPUT
+#define DEBUG_TAG_DECODER_IMPL_PREAMBLE
+#define DEBUG_TAG_DECODER_IMPL_SAMPLE
 
 namespace gr
 {
@@ -47,6 +67,9 @@ namespace gr
         };
 
         // tag_decoder_impl.cc
+        void decode_RN16(sample_information*, int, float*);
+        void decode_EPC(sample_information*, int);
+        void goto_next_slot(void);
         int check_crc(char*, int);
 
         // tag_decoder_decoder.cc
@@ -57,16 +80,16 @@ namespace gr
 
         // debug_message
         std::string current_round_slot;
+        std::ofstream log;
         std::ofstream debug_log;
-        #ifdef DEBUG_DECODER_RN16
-        std::ofstream debug_decoder_RN16_i;
-        std::ofstream debug_decoder_RN16_q;
-        std::ofstream debug_decoder_RN16;
+        #ifdef DEBUG_TAG_DECODER_IMPL_INPUT
+        void debug_input(sample_information*, int, std::string);
         #endif
-        #ifdef DEBUG_DECODER_EPC
-        std::ofstream debug_decoder_EPC_i;
-        std::ofstream debug_decoder_EPC_q;
-        std::ofstream debug_decoder_EPC;
+        #ifdef DEBUG_TAG_DECODER_IMPL_PREAMBLE
+        void debug_preamble(sample_information*, int, std::string, int);
+        #endif
+        #ifdef DEBUG_TAG_DECODER_IMPL_SAMPLE
+        void debug_sample(sample_information*, int, std::string, int);
         #endif
 
       public:
