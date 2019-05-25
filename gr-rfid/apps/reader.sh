@@ -9,4 +9,3 @@ cd ../
 rm log result
 python reader.py
 cat result
-rm a

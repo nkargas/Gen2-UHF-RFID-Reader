@@ -109,12 +109,14 @@ namespace gr
         // Gate block is controlled by the Gen2 Logic block
       if(reader_state->gate_status == GATE_SEEK_EPC)
       {
+        //std::cout << "gate_seek_epc ";
         reader_state->gate_status = GATE_CLOSED;
         reader_state->n_samples_to_ungate = (EPC_BITS + TAG_PREAMBLE_BITS + EXTRA_BITS) * n_samples_TAG_BIT;
         n_samples = 0;
       }
       else if (reader_state->gate_status == GATE_SEEK_RN16)
       {
+        //std::cout << "gate_seek_rn16 ";
         reader_state->gate_status = GATE_CLOSED;
         reader_state->n_samples_to_ungate = (RN16_BITS + TAG_PREAMBLE_BITS + EXTRA_BITS) * n_samples_TAG_BIT;
         n_samples = 0;
@@ -154,8 +156,10 @@ namespace gr
               signal_state = POS_EDGE;
               if (n_samples > n_samples_PW/2)
                 num_pulses++;
+              //  {num_pulses++; std::cout<<num_pulses<<" ";}
               else
                 num_pulses = 0;
+              //  {num_pulses = 0; std::cout<<num_pulses<<" ";}
               n_samples = 0;
             }
 
@@ -164,6 +168,7 @@ namespace gr
               //GR_LOG_INFO(d_debug_logger, "READER COMMAND DETECTED");
 
               reader_state->gate_status = GATE_OPEN;
+              //std::cout << "gate_open ";
 
               reader_state->magn_squared_samples.resize(0);
 
@@ -186,6 +191,7 @@ namespace gr
             if (n_samples >= reader_state->n_samples_to_ungate)
             {
               reader_state->gate_status = GATE_CLOSED;
+              //std::cout << "gate_closed ";
               number_samples_consumed = i+1;
               break;
             }

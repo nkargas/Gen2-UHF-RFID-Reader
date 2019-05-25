@@ -198,7 +198,7 @@ namespace gr
       }
       else
       {
-        log << "│ CRC check fail.." << std::endl;
+        log << "CRC check fail.." << std::endl;
         debug_log << "CRC check fail" << std::endl << std::endl;
         std::cout << "\t\t\t\t\tCRC FAIL!!";
       }
@@ -218,7 +218,6 @@ namespace gr
         if(reader_state->reader_stats.cur_inventory_round > MAX_NUM_QUERIES)
         {
           reader_state->reader_stats.cur_inventory_round--;
-          reader_state->status = TERMINATED;
           reader_state->decoder_status = DECODER_TERMINATED;
         }
         else reader_state->gen2_logic_status = SEND_QUERY;

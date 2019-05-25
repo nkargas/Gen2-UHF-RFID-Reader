@@ -244,9 +244,6 @@ namespace gr
 
       std::ofstream log;
 
-      consumed = ninput_items[0];
-      FILE* file = fopen("a", "w"); fprintf(file, "a"); fclose(file); // dummy code (want to remove)
-
       switch (reader_state->gen2_logic_status)
       {
         case START:
@@ -255,6 +252,7 @@ namespace gr
         memcpy(&out[written], &cw_ack[0], sizeof(float) * cw_ack.size() );
         written += cw_ack.size();
         reader_state->gen2_logic_status = SEND_QUERY;
+        consumed = ninput_items[0];
         break;
 
         case POWER_DOWN:
@@ -262,6 +260,7 @@ namespace gr
         memcpy(&out[written], &p_down[0], sizeof(float) * p_down.size() );
         written += p_down.size();
         reader_state->gen2_logic_status = START;
+        consumed = ninput_items[0];
         break;
 
         case SEND_NAK_QR:
@@ -271,6 +270,7 @@ namespace gr
         memcpy(&out[written], &cw[0], sizeof(float) * cw.size() );
         written+=cw.size();
         reader_state->gen2_logic_status = SEND_QUERY_REP;
+        consumed = ninput_items[0];
         break;
 
         case SEND_NAK_Q:
@@ -280,6 +280,7 @@ namespace gr
         memcpy(&out[written], &cw[0], sizeof(float) * cw.size() );
         written+=cw.size();
         reader_state->gen2_logic_status = SEND_QUERY;
+        consumed = ninput_items[0];
         break;
 
         case SEND_QUERY:
@@ -326,6 +327,7 @@ namespace gr
 
         // Return to IDLE
         reader_state->gen2_logic_status = IDLE;
+        consumed = ninput_items[0];
         break;
 
         case SEND_ACK:
@@ -375,6 +377,7 @@ namespace gr
         memcpy(&out[written], &cw_ack[0], sizeof(float) * cw_ack.size() );
         written += cw_ack.size();
         reader_state->gen2_logic_status = IDLE;      // Return to IDLE
+        consumed = ninput_items[0];
         break;
 
         case SEND_QUERY_REP:
@@ -403,6 +406,7 @@ namespace gr
         std::cout << "QueryRep | ";
 
         reader_state->gen2_logic_status = IDLE;    // Return to IDLE
+        consumed = ninput_items[0];
         break;
 
         case SEND_QUERY_ADJUST:
@@ -431,6 +435,7 @@ namespace gr
         memcpy(&out[written], &cw_query[0], sizeof(float) * cw_query.size());
         written+=cw_query.size();
         reader_state->gen2_logic_status = IDLE;    // Return to IDLE
+        consumed = ninput_items[0];
         break;
 
         default:
