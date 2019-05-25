@@ -59,7 +59,7 @@ namespace gr
 
     int tag_decoder_impl::general_work(int noutput_items, gr_vector_int& ninput_items, gr_vector_const_void_star& input_items, gr_vector_void_star& output_items)
     {
-      float *out = (float *) output_items[0];
+      float* out = (float *)output_items[0];
       int consumed = 0;
 
       // Processing only after n_samples_to_ungate are available and we need to decode
@@ -183,8 +183,7 @@ namespace gr
         for(int i=0 ; i<8 ; i++)
           tag_id += std::pow(2, 7-i) * EPC_bits[104+i];
 
-        //GR_LOG_INFO(d_debug_logger, "EPC CORRECTLY DECODED, TAG ID : " << tag_id);
-        log << "CRC check success! Tag ID= " << tag_id << std::endl;
+        log << " CRC check success! Tag ID= " << tag_id << std::endl;
         debug_log << " Tag ID= " << tag_id << std::endl << std::endl;
         std::cout << "\t\t\t\t\t\t\t\t\t\tTag ID= " << tag_id;
         reader_state->reader_stats.n_epc_correct+=1;
@@ -198,7 +197,7 @@ namespace gr
       }
       else
       {
-        log << "CRC check fail.." << std::endl;
+        log << " CRC check fail.." << std::endl;
         debug_log << "CRC check fail" << std::endl << std::endl;
         std::cout << "\t\t\t\t\tCRC FAIL!!";
       }

@@ -95,7 +95,7 @@ namespace gr
       public:
         tag_decoder_impl(int, std::vector<int>);
         ~tag_decoder_impl();
-        void forecast (int, gr_vector_int&);
+        void forecast(int, gr_vector_int&);
         int general_work(int, gr_vector_int&, gr_vector_const_void_star&, gr_vector_void_star&);
     };
   }
