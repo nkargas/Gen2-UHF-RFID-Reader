@@ -47,7 +47,8 @@ namespace gr
         int calc_usec(const struct timeval start, const struct timeval end);
         void print_results();
 
-        void transmit(float* out, int* written, std::vector<float> bits);
+        void transmit(float*, int*, std::vector<float>);
+        void transmit_bits(float*, int*, std::vector<float>);
 
       public:
         reader_impl(int sample_rate, int dac_rate);

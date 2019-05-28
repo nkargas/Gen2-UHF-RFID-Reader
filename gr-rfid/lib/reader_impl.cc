@@ -162,6 +162,15 @@ namespace gr
       (*written) += bits.size();
     }
 
+    void reader_impl::transmit_bits(float* out, int* written, std::vector<float> bits)
+    {
+      for(int i=0 ; i<bits.size() ; i++)
+      {
+        if(bits[i] == 1) transmit(out, written, data_1);
+        else transmit(out, written, data_0);
+      }
+    }
+
     int reader_impl::general_work(int noutput_items, gr_vector_int &ninput_items, gr_vector_const_void_star &input_items, gr_vector_void_star &output_items)
     {
       const float* in = (const float*)input_items[0];
@@ -172,6 +181,7 @@ namespace gr
       if(reader_state->gen2_logic_status != IDLE)
       {
         log.open(log_file_path, std::ios::app);
+
         if(reader_state->gen2_logic_status == START)
         {
           transmit(out, &written, cw_ack);
@@ -190,11 +200,7 @@ namespace gr
 
           transmit(out, &written, preamble);
           gen_query_bits();
-          for(int i=0 ; i<query_bits.size() ; i++)
-          {
-            if(query_bits[i] == 1) transmit(out, &written, data_1);
-            else transmit(out, &written, data_0);
-          }
+          transmit_bits(out, &written, query_bits);
           transmit(out, &written, cw_query);
 
           log << "│ Send Query | Q= " << FIXED_Q << std::endl;
@@ -232,11 +238,7 @@ namespace gr
 
           transmit(out, &written, frame_sync);
           gen_ack_bits(in);
-          for(int i=0 ; i<ack_bits.size() ; i++)
-          {
-            if(ack_bits[i] == 1) transmit(out, &written, data_1);
-            else transmit(out, &written, data_0);
-          }
+          transmit_bits(out, &written, ack_bits);
           transmit(out, &written, cw_ack);
 
           reader_state->reader_stats.ack_sent.push_back((std::to_string(reader_state->reader_stats.cur_inventory_round)+"_"+std::to_string(reader_state->reader_stats.cur_slot_number)).c_str());
@@ -246,7 +248,7 @@ namespace gr
 
           consumed = ninput_items[0];
           reader_state->gen2_logic_status = IDLE;
-        }
+        }        
         log.close();
       }
 
