@@ -184,7 +184,7 @@ namespace gr
 
         if(reader_state->gen2_logic_status == START)
         {
-          transmit(out, &written, cw_ack);
+        //  transmit(out, &written, cw_ack);
           reader_state->gen2_logic_status = SEND_QUERY;
         }
         else if(reader_state->gen2_logic_status == SEND_QUERY)
@@ -248,7 +248,7 @@ namespace gr
 
           consumed = ninput_items[0];
           reader_state->gen2_logic_status = IDLE;
-        }        
+        }
         log.close();
       }
 

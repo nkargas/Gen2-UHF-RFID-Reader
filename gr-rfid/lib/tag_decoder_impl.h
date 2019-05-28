@@ -28,9 +28,9 @@
 #include <numeric>
 #include <fstream>
 
-#define DEBUG_TAG_DECODER_IMPL_INPUT
-#define DEBUG_TAG_DECODER_IMPL_PREAMBLE
-#define DEBUG_TAG_DECODER_IMPL_SAMPLE
+//#define DEBUG_TAG_DECODER_IMPL_INPUT
+//#define DEBUG_TAG_DECODER_IMPL_PREAMBLE
+//#define DEBUG_TAG_DECODER_IMPL_SAMPLE
 
 namespace gr
 {

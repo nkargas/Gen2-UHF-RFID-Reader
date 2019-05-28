@@ -57,17 +57,7 @@ namespace gr
       win_samples.resize(win_length);
       dc_samples.resize(dc_length);
 
-      //GR_LOG_INFO(d_logger, "T1 samples : " << n_samples_T1);
-      //GR_LOG_INFO(d_logger, "PW samples : " << n_samples_PW);
-
-      //GR_LOG_INFO(d_logger, "Samples of Tag bit : "<< n_samples_TAG_BIT);
-      //GR_LOG_INFO(d_logger, "Size of window : " << win_length);
-      //GR_LOG_INFO(d_logger, "Size of window for dc offset estimation : " << dc_length);
-      //GR_LOG_INFO(d_logger, "Duration of window for dc offset estimation : " << DC_SIZE_D << " us");
-
-
       // First block to be scheduled
-      //GR_LOG_INFO(d_logger, "Initializing reader state...");
       initialize_reader_state();
     }
 
@@ -93,113 +83,56 @@ namespace gr
       const gr_complex *in = (const gr_complex *) input_items[0];
       gr_complex *out = (gr_complex *) output_items[0];
 
-      int n_items = ninput_items[0];
-      int number_samples_consumed = n_items;
-      float sample_ampl = 0;
+      int number_samples_consumed = 0;
       int written = 0;
 
-      if( (reader_state-> reader_stats.n_queries_sent   > MAX_NUM_QUERIES ||
-        reader_state-> reader_stats.tag_reads.size() > NUMBER_UNIQUE_TAGS) &&
-        reader_state-> status != TERMINATED)
-      {
-        reader_state-> status = TERMINATED;
-        //GR_LOG_INFO(d_logger, "Termination");
-      }
-
-        // Gate block is controlled by the Gen2 Logic block
+      // Gate block is controlled by the Gen2 Logic block
       if(reader_state->gate_status == GATE_SEEK_EPC)
       {
-        //std::cout << "gate_seek_epc ";
-        reader_state->gate_status = GATE_CLOSED;
-        reader_state->n_samples_to_ungate = (EPC_BITS + TAG_PREAMBLE_BITS + EXTRA_BITS) * n_samples_TAG_BIT;
+        reader_state->gate_status = GATE_READY;
         n_samples = 0;
+        reader_state->n_samples_to_ungate = (EPC_BITS + TAG_PREAMBLE_BITS + EXTRA_BITS) * n_samples_TAG_BIT;
       }
       else if (reader_state->gate_status == GATE_SEEK_RN16)
       {
-        //std::cout << "gate_seek_rn16 ";
-        reader_state->gate_status = GATE_CLOSED;
-        reader_state->n_samples_to_ungate = (RN16_BITS + TAG_PREAMBLE_BITS + EXTRA_BITS) * n_samples_TAG_BIT;
+        reader_state->gate_status = GATE_READY;
         n_samples = 0;
+        reader_state->n_samples_to_ungate = (RN16_BITS + TAG_PREAMBLE_BITS + EXTRA_BITS) * n_samples_TAG_BIT;
       }
+      else number_samples_consumed = ninput_items[0];
 
-      if (reader_state->status == RUNNING)
+      if(reader_state->gate_status == GATE_READY)
       {
-        for(int i = 0; i < n_items; i++)
+        number_samples_consumed = ninput_items[0];
+        for(int i=0 ; i<ninput_items[0] ; i++)
         {
-          // Tracking average amplitude
-          sample_ampl = std::abs(in[i]);
-          avg_ampl = avg_ampl + (sample_ampl - win_samples[win_index])/win_length;
-          win_samples[win_index] = sample_ampl;
-          win_index = (win_index + 1) % win_length;
-
-          //Threshold for detecting negative/positive edges
-          sample_thresh = avg_ampl * THRESH_FRACTION;
-
-          if( !(reader_state->gate_status == GATE_OPEN) )
+          if(n_samples >= 2200) // experimental value
           {
-            //Tracking DC offset (only during T1)
-            dc_est =  dc_est + (in[i] - dc_samples[dc_index])/std::complex<float>(dc_length,0);
-            dc_samples[dc_index] = in[i];
-            dc_index = (dc_index + 1) % dc_length;
-
-            n_samples++;
-
-            // Potitive edge -> Negative edge
-            if( sample_ampl < sample_thresh && signal_state == POS_EDGE)
-            {
-              n_samples = 0;
-              signal_state = NEG_EDGE;
-            }
-            // Negative edge -> Positive edge
-            else if (sample_ampl > sample_thresh && signal_state == NEG_EDGE)
-            {
-              signal_state = POS_EDGE;
-              if (n_samples > n_samples_PW/2)
-                num_pulses++;
-              //  {num_pulses++; std::cout<<num_pulses<<" ";}
-              else
-                num_pulses = 0;
-              //  {num_pulses = 0; std::cout<<num_pulses<<" ";}
-              n_samples = 0;
-            }
-
-            if(n_samples > n_samples_T1 && signal_state == POS_EDGE && num_pulses > NUM_PULSES_COMMAND)
-            {
-              //GR_LOG_INFO(d_debug_logger, "READER COMMAND DETECTED");
-
-              reader_state->gate_status = GATE_OPEN;
-              //std::cout << "gate_open ";
-
-              reader_state->magn_squared_samples.resize(0);
-
-              reader_state->magn_squared_samples.push_back(std::norm(in[i] - dc_est));
-              out[written] = in[i] - dc_est; // Remove offset from complex samples
-              written++;
-
-              num_pulses = 0;
-              n_samples =  1; // Count number of samples passed to the next block
-            }
-          } // if( !(reader_state->gate_status == GATE_OPEN) )
-          else
+            reader_state->gate_status = GATE_OPEN;
+            n_samples = 0;
+            number_samples_consumed = i+1;
+            break;
+          }
+          n_samples++;
+        }
+      }
+      else if(reader_state->gate_status == GATE_OPEN)
+      {
+        number_samples_consumed = ninput_items[0];
+        for(int i=0 ; i<ninput_items[0] ; i++)
+        {
+          if (n_samples >= reader_state->n_samples_to_ungate)
           {
-            n_samples++;
-
-            reader_state->magn_squared_samples.push_back(std::norm(in[i] - dc_est));
-            out[written] = in[i] - dc_est; // Remove offset from complex samples
-
-            written++;
-            if (n_samples >= reader_state->n_samples_to_ungate)
-            {
-              reader_state->gate_status = GATE_CLOSED;
-              //std::cout << "gate_closed ";
-              number_samples_consumed = i+1;
-              break;
-            }
-          } // else
-        } // for(int i = 0; i < n_items; i++)
-      } // if (reader_state->status == RUNNING)
-    consume_each (number_samples_consumed);
-    return written;
-    } // gate_impl::general_work
-  } /* namespace rfid */
-} /* namespace gr */
+            reader_state->gate_status = GATE_CLOSED;
+            number_samples_consumed = i+1;
+            break;
+          }
+          out[written++] = in[i];
+          n_samples++;
+        }
+      }
+      consume_each (number_samples_consumed);
+      return written;
+    }
+  }
+}
