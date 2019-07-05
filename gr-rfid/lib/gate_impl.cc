@@ -27,6 +27,9 @@
 #include <sys/time.h>
 #include <stdio.h>
 
+#define AMP_LOWBOUND 0.01
+#define AMP_THRESHOLD 0.005
+
 namespace gr
 {
   namespace rfid
@@ -45,7 +48,7 @@ namespace gr
     : gr::block("gate",
     gr::io_signature::make(1, 1, sizeof(gr_complex)),
     gr::io_signature::make(1, 1, sizeof(gr_complex))),
-    n_samples(0), win_index(0), dc_index(0), num_pulses(0), signal_state(NEG_EDGE), avg_ampl(0), dc_est(0,0)
+    n_samples(0), win_index(0), dc_index(0), num_pulses(0), avg_amp(0)
     {
       n_samples_T1       = T1_D       * (sample_rate / pow(10,6));
       n_samples_PW       = PW_D       * (sample_rate / pow(10,6));
@@ -86,34 +89,85 @@ namespace gr
       int number_samples_consumed = 0;
       int written = 0;
 
-      // Gate block is controlled by the Gen2 Logic block
-      if(reader_state->gate_status == GATE_SEEK_EPC)
-      {
-        reader_state->gate_status = GATE_READY;
-        n_samples = 0;
-        reader_state->n_samples_to_ungate = (EPC_BITS + TAG_PREAMBLE_BITS + EXTRA_BITS) * n_samples_TAG_BIT;
-      }
-      else if (reader_state->gate_status == GATE_SEEK_RN16)
-      {
-        reader_state->gate_status = GATE_READY;
-        n_samples = 0;
-        reader_state->n_samples_to_ungate = (RN16_BITS + TAG_PREAMBLE_BITS + EXTRA_BITS) * n_samples_TAG_BIT;
-      }
-      else number_samples_consumed = ninput_items[0];
+      std::ofstream log;
+      log.open(log_file_path, std::ios::app);
 
-      if(reader_state->gate_status == GATE_READY)
+      if(reader_state->gate_status == GATE_START)
       {
         number_samples_consumed = ninput_items[0];
         for(int i=0 ; i<ninput_items[0] ; i++)
         {
-          if(n_samples >= 2200) // experimental value
+          if(std::norm(in[i]) < AMP_LOWBOUND) continue;
+          n_samples++;
+          if(n_samples > 5000)
           {
-            reader_state->gate_status = GATE_OPEN;
-            n_samples = 0;
-            number_samples_consumed = i+1;
+            log << "n_samples_TAG_BIT= " << n_samples_TAG_BIT << std::endl;
+            log << "Average of first 5000 amplitudes= " << avg_amp << std::endl;
+            reader_state->gen2_logic_status = SEND_QUERY;
+            reader_state->gate_status = GATE_CLOSED;
+            number_samples_consumed = i-1;
             break;
           }
-          n_samples++;
+          else avg_amp = (avg_amp + std::norm(in[i])) / 2;
+        }
+      }
+
+      // Gate block is controlled by the Gen2 Logic block
+      if(reader_state->gate_status == GATE_SEEK_EPC)
+      {
+        reader_state->gate_status = GATE_TRACK;
+        n_samples = 0;
+        num_pulses = 0;
+        reader_state->n_samples_to_ungate = (EPC_BITS + TAG_PREAMBLE_BITS + EXTRA_BITS) * n_samples_TAG_BIT;
+      }
+      else if(reader_state->gate_status == GATE_SEEK_RN16)
+      {
+        reader_state->gate_status = GATE_TRACK;
+        n_samples = 0;
+        num_pulses = 0;
+        reader_state->n_samples_to_ungate = (RN16_BITS + TAG_PREAMBLE_BITS + EXTRA_BITS) * n_samples_TAG_BIT;
+      }
+      else number_samples_consumed = ninput_items[0];
+
+      if(reader_state->gate_status == GATE_TRACK)
+      {
+        number_samples_consumed = ninput_items[0];
+        for(int i=0 ; i<ninput_items[0] ; i++)
+        {
+          if(std::norm(in[i]) < AMP_LOWBOUND) continue;
+
+          if(std::norm(in[i]) - avg_amp > AMP_THRESHOLD)
+          {
+            log << "│ Found reader command!" << std::endl;
+            reader_state->gate_status = GATE_READY;
+            n_samples = 0;
+            num_pulses++;
+            number_samples_consumed = i-1;
+            break;
+          }
+        }
+      }
+      else if(reader_state->gate_status == GATE_READY)
+      {
+        number_samples_consumed = ninput_items[0];
+        for(int i=0 ; i<ninput_items[0] ; i++)
+        {
+          if(std::norm(in[i]) < AMP_LOWBOUND) continue;
+
+          if(std::norm(in[i]) - avg_amp > AMP_THRESHOLD)
+          {  n_samples = 0; num_pulses++;}
+          else
+          {
+            if(++n_samples > n_samples_T1)
+            {
+              log << "│ Gate open! | num_pulses= " << num_pulses << std::endl;
+              log << "├──────────────────────────────────────────────────" << std::endl;
+              reader_state->gate_status = GATE_OPEN;
+              n_samples = 0;
+              number_samples_consumed = i-1;
+              break;
+            }
+          }
         }
       }
       else if(reader_state->gate_status == GATE_OPEN)
@@ -131,6 +185,7 @@ namespace gr
           n_samples++;
         }
       }
+      log.close();
       consume_each (number_samples_consumed);
       return written;
     }

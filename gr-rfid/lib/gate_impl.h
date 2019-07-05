@@ -37,6 +37,8 @@ namespace gr {
         int  win_index, dc_index, win_length, dc_length, s_rate;
         float avg_ampl, num_pulses, sample_thresh;
 
+        float avg_amp;
+
         std::vector<float> win_samples,cw_samples;
         std::vector<gr_complex> dc_samples;
         gr_complex dc_est;

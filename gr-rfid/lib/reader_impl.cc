@@ -184,8 +184,22 @@ namespace gr
 
         if(reader_state->gen2_logic_status == START)
         {
-        //  transmit(out, &written, cw_ack);
-          reader_state->gen2_logic_status = SEND_QUERY;
+          log << "preamble= " << n_delim_s + n_data0_s + n_data0_s + n_data1_s + n_trcal_s << std::endl;
+          log << "frame_sync= " << n_delim_s + n_data0_s + n_data0_s + n_data1_s << std::endl;
+          log << "delim= " << n_delim_s << std::endl;
+          log << "data_0= " << n_data0_s << std::endl;
+          log << "rtcal= " << n_data0_s + n_data1_s << std::endl;
+          log << "trcal= " << n_trcal_s << std::endl << std::endl;
+
+          log << "cw_query= " << n_cwquery_s << std::endl;
+          log << "cw_ack= " << n_cwack_s << std::endl;
+          log << "T1= " << T1_D / sample_d << std::endl;
+          log << "T2= " << T2_D / sample_d << std::endl;
+          log << "RN16= " << RN16_D / sample_d << std::endl;
+          log << "EPC= " << EPC_D / sample_d << std::endl << std::endl;
+
+          transmit(out, &written, cw_ack);
+          reader_state->gen2_logic_status = IDLE;
         }
         else if(reader_state->gen2_logic_status == SEND_QUERY)
         {
@@ -202,6 +216,7 @@ namespace gr
           gen_query_bits();
           transmit_bits(out, &written, query_bits);
           transmit(out, &written, cw_query);
+          log << cw_query.size() << std::endl;
 
           log << "│ Send Query | Q= " << FIXED_Q << std::endl;
           log << "├──────────────────────────────────────────────────" << std::endl;
