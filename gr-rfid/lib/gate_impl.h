@@ -37,7 +37,9 @@ namespace gr {
         int  win_index, dc_index, win_length, dc_length, s_rate;
         float avg_ampl, num_pulses, sample_thresh;
 
-        float avg_amp;
+        bool real_or_imag, trcal;
+        float avg_real, avg_imag, avg_amp;
+        int max_count;
 
         std::vector<float> win_samples,cw_samples;
         std::vector<gr_complex> dc_samples;
@@ -55,6 +57,8 @@ namespace gr {
              gr_vector_int &ninput_items,
              gr_vector_const_void_star &input_items,
              gr_vector_void_star &output_items);
+
+        void gate_fail();
     };
   } // namespace rfid
 } // namespace gr

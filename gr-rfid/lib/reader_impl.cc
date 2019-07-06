@@ -58,7 +58,7 @@ namespace gr
 
       // CW waveforms of different sizes
       n_cwquery_s   = (T1_D+T2_D+RN16_D)/sample_d;     //RN16
-      n_cwack_s     = 2*(3*T1_D+T2_D+EPC_D)/sample_d;    //EPC   if it is longer than nominal it wont cause tags to change inventoried flag
+      n_cwack_s     = (T1_D+T2_D+EPC_D)/sample_d;    //EPC   if it is longer than nominal it wont cause tags to change inventoried flag
       n_p_down_s     = (P_DOWN_D)/sample_d;
 
       p_down.resize(n_p_down_s);        // Power down samples
@@ -178,6 +178,8 @@ namespace gr
       int consumed = 0;
       int written = 0;
 
+      float tp[2]={1,0};
+
       if(reader_state->gen2_logic_status != IDLE)
       {
         log.open(log_file_path, std::ios::app);
@@ -199,6 +201,7 @@ namespace gr
           log << "EPC= " << EPC_D / sample_d << std::endl << std::endl;
 
           transmit(out, &written, cw_ack);
+          out[written++] = 0;
           reader_state->gen2_logic_status = IDLE;
         }
         else if(reader_state->gen2_logic_status == SEND_QUERY)
@@ -216,7 +219,8 @@ namespace gr
           gen_query_bits();
           transmit_bits(out, &written, query_bits);
           transmit(out, &written, cw_query);
-          log << cw_query.size() << std::endl;
+          out[written++] = 0;
+          out[written++] = 1;
 
           log << "│ Send Query | Q= " << FIXED_Q << std::endl;
           log << "├──────────────────────────────────────────────────" << std::endl;
@@ -236,6 +240,8 @@ namespace gr
 
           transmit(out, &written, query_rep);
           transmit(out, &written, cw_query);
+          out[written++] = 0;
+          out[written++] = 1;
 
           log << "│ Send QueryRep" << std::endl;
           log << "├──────────────────────────────────────────────────" << std::endl;
@@ -255,6 +261,8 @@ namespace gr
           gen_ack_bits(in);
           transmit_bits(out, &written, ack_bits);
           transmit(out, &written, cw_ack);
+          out[written++] = 0;
+          out[written++] = 1;
 
           reader_state->reader_stats.ack_sent.push_back((std::to_string(reader_state->reader_stats.cur_inventory_round)+"_"+std::to_string(reader_state->reader_stats.cur_slot_number)).c_str());
           log << "│ Send ACK" << std::endl;
