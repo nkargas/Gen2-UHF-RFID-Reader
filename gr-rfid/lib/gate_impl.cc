@@ -27,11 +27,13 @@
 #include <sys/time.h>
 #include <stdio.h>
 
-#define AMP_LOWBOUND 0.01
-#define AMP_THRESHOLD 0.005
-#define MAX_SEARCH_TRACK 5000
-#define MAX_SEARCH_READY 3000
-#define T1_LEN 200
+#define AMP_LOWBOUND 0.001
+#define AMP_THRESHOLD 0.002
+#define MIN_PULSE 5
+#define T1_LEN 400
+
+#define MAX_SEARCH_TRACK 10000
+#define MAX_SEARCH_READY 8000
 
 namespace gr
 {
@@ -51,7 +53,7 @@ namespace gr
     : gr::block("gate",
     gr::io_signature::make(1, 1, sizeof(gr_complex)),
     gr::io_signature::make(1, 1, sizeof(gr_complex))),
-    n_samples(0), win_index(0), dc_index(0), avg_real(0), avg_imag(0), avg_amp(0)
+    n_samples(0), win_index(0), dc_index(0), avg_amp(0), num_pulses(0)
     {
       n_samples_T1       = T1_D       * (sample_rate / pow(10,6));
       n_samples_PW       = PW_D       * (sample_rate / pow(10,6));
@@ -95,127 +97,107 @@ namespace gr
       std::ofstream log;
       log.open(log_file_path, std::ios::app);
 
-      if(reader_state->gate_status == GATE_START)
+      number_samples_consumed = ninput_items[0];
+      if(reader_state->gate_status != GATE_CLOSED)
       {
-        number_samples_consumed = ninput_items[0];
         for(int i=0 ; i<ninput_items[0] ; i++)
         {
-          if(std::abs(in[i]) < AMP_LOWBOUND) continue;
+          float sample = std::abs(in[i]);
 
-          if(++n_samples > 5000)
+          if(reader_state->gate_status == GATE_START)
           {
-            log << "n_samples_TAG_BIT= " << n_samples_TAG_BIT << std::endl;
-            log << "Average of first 5000 amplitudes= " << avg_real << std::endl;
+            if(++n_samples <= 28000) avg_amp = (avg_amp + sample) / 2;
+            else
+            {
+              log << "n_samples_TAG_BIT= " << n_samples_TAG_BIT << std::endl;
+              log << "Average of first 28000 amplitudes= " << avg_amp << std::endl;
 
-            reader_state->gen2_logic_status = SEND_QUERY;
-            reader_state->gate_status = GATE_CLOSED;
-            number_samples_consumed = i-1;
-            break;
+              reader_state->gen2_logic_status = SEND_QUERY;
+              reader_state->gate_status = GATE_CLOSED;
+              number_samples_consumed = i-1;
+              break;
+            }
           }
-          else
+          else if(reader_state->gate_status == GATE_SEEK_RN16)
           {
-            avg_real = (avg_real + std::abs(in[i])) / 2;
+            log << "│ Gate seek RN16.." << std::endl;
+            reader_state->n_samples_to_ungate = (RN16_BITS + TAG_PREAMBLE_BITS + EXTRA_BITS) * n_samples_TAG_BIT;
+            reader_state->gate_status = GATE_SEEK;
+          }
+          else if(reader_state->gate_status == GATE_SEEK_EPC)
+          {
+            log << "│ Gate seek EPC.." << std::endl;
+            reader_state->n_samples_to_ungate = (EPC_BITS + TAG_PREAMBLE_BITS + EXTRA_BITS) * n_samples_TAG_BIT;
+            reader_state->gate_status = GATE_SEEK;
+          }
+          if(reader_state->gate_status == GATE_SEEK)
+          {
+            reader_state->gate_status = GATE_TRACK;
+            signal_state = NEG_EDGE;
+            num_pulses = 0;
+            max_count = MAX_SEARCH_TRACK;
+          }
+          else if(reader_state->gate_status == GATE_TRACK)
+          {
+            if(--max_count <= 0)
+            {log<<std::endl;
+              gate_fail();
+              number_samples_consumed = i-1;
+              break;
+            }log<<sample << " ";
+            if(sample < AMP_LOWBOUND) continue;
+
+            if(signal_state == NEG_EDGE && sample - avg_amp > AMP_THRESHOLD)
+            {log<<0<<" ";
+              signal_state = POS_EDGE;
+            }
+            else if(signal_state == POS_EDGE && avg_amp - sample > AMP_THRESHOLD)
+            {log<<0.00001<< " ";
+              signal_state = NEG_EDGE;
+              if(++num_pulses > MIN_PULSE)
+              {log<<std::endl;
+                log << "│ Gate ready!" << std::endl;
+                std::cout << "Command found | ";
+                reader_state->gate_status = GATE_READY;
+                n_samples = 0;
+                max_count = MAX_SEARCH_READY;
+              }
+            }
+          }
+          else if(reader_state->gate_status == GATE_READY)
+          {
+            if(--max_count <= 0)
+            {log<<std::endl;
+              gate_fail();
+              number_samples_consumed = i-1;
+              break;
+            }log<<sample << " ";
+            if(sample < AMP_LOWBOUND) continue;
+
+            if(std::abs(avg_amp - sample) > AMP_THRESHOLD) n_samples = 0;
+            else if(n_samples++ > T1_LEN)
+            {
+              log << "│ Gate open!" << std::endl;
+              log << "├──────────────────────────────────────────────────" << std::endl;
+              reader_state->gate_status = GATE_OPEN;
+              n_samples = 0;
+              number_samples_consumed = i-1;
+              break;
+            }
+          }
+          else if(reader_state->gate_status == GATE_OPEN)
+          {
+            if(n_samples++ > reader_state->n_samples_to_ungate)
+            {
+              reader_state->gate_status = GATE_CLOSED;
+              number_samples_consumed = i-1;
+              break;
+            }
+            out[written++] = in[i];
           }
         }
       }
 
-      // Gate block is controlled by the Gen2 Logic block
-      if(reader_state->gate_status == GATE_SEEK_EPC)
-      {
-        log << "│ Gate seek EPC.." << std::endl;
-        reader_state->gate_status = GATE_TRACK;
-        n_samples = 0;
-        avg_amp = 0;
-        max_count = MAX_SEARCH_TRACK;
-        trcal = false;
-        reader_state->n_samples_to_ungate = (EPC_BITS + TAG_PREAMBLE_BITS + EXTRA_BITS) * n_samples_TAG_BIT;
-      }
-      else if(reader_state->gate_status == GATE_SEEK_RN16)
-      {
-        log << "│ Gate seek RN16.." << std::endl;
-        reader_state->gate_status = GATE_TRACK;
-        n_samples = 0;
-        avg_amp = 0;
-        max_count = MAX_SEARCH_TRACK;
-        trcal = true;
-        reader_state->n_samples_to_ungate = (RN16_BITS + TAG_PREAMBLE_BITS + EXTRA_BITS) * n_samples_TAG_BIT;
-      }
-      else number_samples_consumed = ninput_items[0]; // GATE_CLOSED
-
-      if(reader_state->gate_status == GATE_TRACK)
-      {
-        number_samples_consumed = ninput_items[0];
-        for(int i=0 ; i<ninput_items[0] ; i++)
-        {
-          if(--max_count <= 0)
-          {
-            gate_fail();
-            number_samples_consumed = i-1;
-            break;
-          }
-          if(std::abs(in[i]) < AMP_LOWBOUND) continue;
-
-          if(n_samples > 50)
-          {
-            log << "│ Average of first 50 amplitudes= " << avg_amp << std::endl;
-            std::cout << "Command found | ";
-            reader_state->gate_status = GATE_READY;
-            n_samples = 0;
-            max_count = MAX_SEARCH_READY;
-            number_samples_consumed = i-1;
-            break;
-          }
-
-          if(std::abs(std::abs(in[i]) - avg_real) > AMP_THRESHOLD)
-          {
-            avg_amp = (avg_amp + std::abs(std::abs(in[i]) - avg_real)) / 2;
-            n_samples++;
-          }
-        }
-      }
-      else if(reader_state->gate_status == GATE_READY)
-      {
-        number_samples_consumed = ninput_items[0];
-        for(int i=0 ; i<ninput_items[0] ; i++)
-        {
-          if(--max_count <= 0)
-          {
-            gate_fail();
-            number_samples_consumed = i-1;
-            break;
-          }
-          if(std::abs(in[i]) < AMP_LOWBOUND) continue;
-
-
-          if(std::abs(std::abs(in[i]) - avg_real) > avg_amp) n_samples = 0;
-
-          if(n_samples++ > T1_LEN)
-          {
-            if(trcal) {n_samples = 0; trcal = false; continue;}
-            log << "│ Gate open!" << std::endl;
-            log << "├──────────────────────────────────────────────────" << std::endl;
-            reader_state->gate_status = GATE_OPEN;
-            n_samples = 0;
-            number_samples_consumed = i-1;
-            break;
-          }
-        }
-      }
-      else if(reader_state->gate_status == GATE_OPEN)
-      {
-        number_samples_consumed = ninput_items[0];
-        for(int i=0 ; i<ninput_items[0] ; i++)
-        {
-          if(n_samples >= reader_state->n_samples_to_ungate)
-          {
-            reader_state->gate_status = GATE_CLOSED;
-            number_samples_consumed = i-1;
-            break;
-          }
-          out[written++] = in[i];
-          n_samples++;
-        }
-      }
       log.close();
       consume_each (number_samples_consumed);
       return written;
@@ -226,7 +208,7 @@ namespace gr
       std::ofstream log;
       log.open(log_file_path, std::ios::app);
 
-      log << std::endl << "│ Gate search FAIL!" << std::endl;
+      log << "│ Gate search FAIL!" << std::endl;
       std::cout << "Gate FAIL!!";
       reader_state->gate_status = GATE_CLOSED;
 

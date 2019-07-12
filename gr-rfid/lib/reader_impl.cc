@@ -219,8 +219,6 @@ namespace gr
           gen_query_bits();
           transmit_bits(out, &written, query_bits);
           transmit(out, &written, cw_query);
-          out[written++] = 0;
-          out[written++] = 1;
 
           log << "│ Send Query | Q= " << FIXED_Q << std::endl;
           log << "├──────────────────────────────────────────────────" << std::endl;
@@ -240,8 +238,6 @@ namespace gr
 
           transmit(out, &written, query_rep);
           transmit(out, &written, cw_query);
-          out[written++] = 0;
-          out[written++] = 1;
 
           log << "│ Send QueryRep" << std::endl;
           log << "├──────────────────────────────────────────────────" << std::endl;
@@ -261,8 +257,6 @@ namespace gr
           gen_ack_bits(in);
           transmit_bits(out, &written, ack_bits);
           transmit(out, &written, cw_ack);
-          out[written++] = 0;
-          out[written++] = 1;
 
           reader_state->reader_stats.ack_sent.push_back((std::to_string(reader_state->reader_stats.cur_inventory_round)+"_"+std::to_string(reader_state->reader_stats.cur_slot_number)).c_str());
           log << "│ Send ACK" << std::endl;

@@ -33,7 +33,7 @@ namespace gr {
 
     enum STATUS               {RUNNING, TERMINATED};
     enum GEN2_LOGIC_STATUS  {SEND_QUERY, SEND_ACK, SEND_QUERY_REP, IDLE, SEND_CW, START, SEND_QUERY_ADJUST, SEND_NAK_QR, SEND_NAK_Q, POWER_DOWN};
-    enum GATE_STATUS        {GATE_START, GATE_TRACK, GATE_READY, GATE_OPEN, GATE_CLOSED, GATE_SEEK_RN16, GATE_SEEK_EPC};
+    enum GATE_STATUS        {GATE_START, GATE_TRACK, GATE_READY, GATE_OPEN, GATE_CLOSED, GATE_SEEK, GATE_SEEK_RN16, GATE_SEEK_EPC};
     enum DECODER_STATUS     {DECODER_DECODE_RN16, DECODER_DECODE_EPC, DECODER_TERMINATED};
 
     struct READER_STATS
@@ -95,7 +95,7 @@ namespace gr {
     const int DR_D          = 8;
     const float BLF_D     = T_READER_FREQ / pow(10,6);  // 0.04
     const int TPRI_D      = 1 / BLF_D;  // 25us
-    const int PW_D        = 12; // Half Tari
+    const int PW_D        = 24; // Half Tari
     const int RTCAL_D     = 6 * PW_D; // 72us
     const int TRCAL_D     = DR_D / BLF_D; // 200us
     const int T1_D        = std::max(RTCAL_D, 10 * TPRI_D);  // 250us

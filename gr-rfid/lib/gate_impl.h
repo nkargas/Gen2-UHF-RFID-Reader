@@ -35,11 +35,12 @@ namespace gr {
 
         int   n_samples, n_samples_T1, n_samples_PW, n_samples_TAG_BIT;
         int  win_index, dc_index, win_length, dc_length, s_rate;
-        float avg_ampl, num_pulses, sample_thresh;
+        float avg_ampl, sample_thresh;
 
-        bool real_or_imag, trcal;
-        float avg_real, avg_imag, avg_amp;
+        bool pulse_state;
+        double avg_amp;
         int max_count;
+        int num_pulses;
 
         std::vector<float> win_samples,cw_samples;
         std::vector<gr_complex> dc_samples;
