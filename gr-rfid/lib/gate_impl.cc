@@ -30,7 +30,6 @@
 #define AMP_LOWBOUND 0.001
 #define AMP_THRESHOLD 0.002
 #define MIN_PULSE 5
-#define T1_LEN 400
 
 #define MAX_SEARCH_TRACK 10000
 #define MAX_SEARCH_READY 8000
@@ -53,17 +52,10 @@ namespace gr
     : gr::block("gate",
     gr::io_signature::make(1, 1, sizeof(gr_complex)),
     gr::io_signature::make(1, 1, sizeof(gr_complex))),
-    n_samples(0), win_index(0), dc_index(0), avg_amp(0), num_pulses(0)
+    n_samples(0), avg_amp(0), num_pulses(0)
     {
       n_samples_T1       = T1_D       * (sample_rate / pow(10,6));
-      n_samples_PW       = PW_D       * (sample_rate / pow(10,6));
       n_samples_TAG_BIT  = TPRI_D  * (sample_rate / pow(10,6));
-
-      win_length = WIN_SIZE_D * (sample_rate/ pow(10,6));
-      dc_length  = DC_SIZE_D  * (sample_rate / pow(10,6));
-
-      win_samples.resize(win_length);
-      dc_samples.resize(dc_length);
 
       // First block to be scheduled
       initialize_reader_state();
@@ -175,7 +167,7 @@ namespace gr
             if(sample < AMP_LOWBOUND) continue;
 
             if(std::abs(avg_amp - sample) > AMP_THRESHOLD) n_samples = 0;
-            else if(n_samples++ > T1_LEN)
+            else if(n_samples++ > n_samples_T1)
             {
               log << "│ Gate open!" << std::endl;
               log << "├──────────────────────────────────────────────────" << std::endl;
