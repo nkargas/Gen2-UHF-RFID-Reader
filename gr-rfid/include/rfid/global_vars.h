@@ -26,8 +26,6 @@
 #include <sys/time.h>
 #include <fstream>
 
-#define DEBUG_MESSAGE
-
 namespace gr {
   namespace rfid {
 
@@ -115,7 +113,7 @@ namespace gr {
     const int RN16_BITS          = 17;  // Dummy bit at the end
     const int EPC_BITS            = 129;  // PC + EPC + CRC16 + Dummy = 6 + 16 + 96 + 16 + 1 = 135
     const int QUERY_LENGTH        = 22;  // Query length in bits
-    const int EXTRA_BITS          = 10; // extra bits to ungate
+    const int EXTRA_BITS          = 12; // extra bits to ungate
 
     // Duration in us
     const int RN16_D       = (RN16_BITS + TAG_PREAMBLE_BITS) * TPRI_D;  // 575us

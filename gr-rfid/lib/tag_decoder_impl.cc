@@ -87,7 +87,9 @@ namespace gr
         #endif
 
         // detect preamble
-        int index = tag_sync(&ys);  //find where the tag data bits start
+        int index;
+        if(mode == 1) index = tag_sync(&ys, RN16_BITS-1);
+        else if(mode == 2) index = tag_sync(&ys, EPC_BITS-1);
 
         if(index == -1)
         {

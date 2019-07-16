@@ -28,8 +28,10 @@
 #include <stdio.h>
 
 #define AMP_LOWBOUND 0.001
-#define AMP_THRESHOLD 0.002
+#define AMP_POS_THRESHOLD 0.005
+#define AMP_NEG_THRESHOLD 0.05
 #define MIN_PULSE 5
+#define T1_LEN 400
 
 #define MAX_SEARCH_TRACK 10000
 #define MAX_SEARCH_READY 8000
@@ -132,22 +134,22 @@ namespace gr
           else if(reader_state->gate_status == GATE_TRACK)
           {
             if(--max_count <= 0)
-            {log<<std::endl;
+            {//log<<std::endl;
               gate_fail();
               number_samples_consumed = i-1;
               break;
-            }log<<sample << " ";
+            }//og<<sample<<" ";
             if(sample < AMP_LOWBOUND) continue;
 
-            if(signal_state == NEG_EDGE && sample - avg_amp > AMP_THRESHOLD)
-            {log<<0<<" ";
+            if(signal_state == NEG_EDGE && sample - avg_amp > AMP_POS_THRESHOLD)
+            {
               signal_state = POS_EDGE;
             }
-            else if(signal_state == POS_EDGE && avg_amp - sample > AMP_THRESHOLD)
-            {log<<0.00001<< " ";
+            else if(signal_state == POS_EDGE && avg_amp - sample > AMP_NEG_THRESHOLD)
+            {
               signal_state = NEG_EDGE;
               if(++num_pulses > MIN_PULSE)
-              {log<<std::endl;
+              {//log<<std::endl;
                 log << "│ Gate ready!" << std::endl;
                 std::cout << "Command found | ";
                 reader_state->gate_status = GATE_READY;
@@ -159,16 +161,16 @@ namespace gr
           else if(reader_state->gate_status == GATE_READY)
           {
             if(--max_count <= 0)
-            {log<<std::endl;
+            {//log<<std::endl;
               gate_fail();
               number_samples_consumed = i-1;
               break;
-            }log<<sample << " ";
+            }//log<<sample<<" ";
             if(sample < AMP_LOWBOUND) continue;
 
-            if(std::abs(avg_amp - sample) > AMP_THRESHOLD) n_samples = 0;
-            else if(n_samples++ > n_samples_T1)
-            {
+            if(avg_amp - sample > AMP_NEG_THRESHOLD) n_samples = 0;
+            else if(n_samples++ > T1_LEN)
+            {//log<<std::endl;
               log << "│ Gate open!" << std::endl;
               log << "├──────────────────────────────────────────────────" << std::endl;
               reader_state->gate_status = GATE_OPEN;
@@ -179,7 +181,7 @@ namespace gr
           }
           else if(reader_state->gate_status == GATE_OPEN)
           {
-            if(n_samples++ > reader_state->n_samples_to_ungate)
+            if(++n_samples > reader_state->n_samples_to_ungate)
             {
               reader_state->gate_status = GATE_CLOSED;
               number_samples_consumed = i-1;
@@ -191,7 +193,7 @@ namespace gr
       }
 
       log.close();
-      consume_each (number_samples_consumed);
+      consume_each(number_samples_consumed);
       return written;
     }
 

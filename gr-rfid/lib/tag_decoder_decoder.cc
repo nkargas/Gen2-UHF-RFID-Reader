@@ -11,7 +11,7 @@ namespace gr
 {
   namespace rfid
   {
-    int tag_decoder_impl::tag_sync(sample_information* ys)
+    int tag_decoder_impl::tag_sync(sample_information* ys, int n_expected_bit)
     // This method searches the preamble and returns the start index of the tag data.
     // If the correlation value exceeds the threshold, it returns the start index of the tag data.
     // Else, it returns -1.
@@ -24,7 +24,7 @@ namespace gr
       int max_index = 0;
 
       // compare all samples with sliding
-      for(int i=0 ; i<ys->total_size()-win_size ; i++)  // i: start point
+      for(int i=0 ; i<ys->total_size()-(n_samples_TAG_BIT*(TAG_PREAMBLE_BITS+n_expected_bit)) ; i++)  // i: start point
       {
         // calculate average_amp (threshold)
         float average_amp = 0.0f;

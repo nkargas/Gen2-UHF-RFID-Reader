@@ -1,4 +1,4 @@
-git pull origin 1904_renewal
+#git pull origin master
 cd ../build
 make
 make test
