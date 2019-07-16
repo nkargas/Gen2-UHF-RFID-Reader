@@ -215,6 +215,7 @@ namespace gr
           reader_state->decoder_status = DECODER_DECODE_RN16;
           reader_state->gate_status    = GATE_SEEK_RN16;
 
+          for(int i=0 ; i<100 ; i++) out[written++] = 1;
           transmit(out, &written, preamble);
           gen_query_bits();
           transmit_bits(out, &written, query_bits);
@@ -236,6 +237,7 @@ namespace gr
           reader_state->decoder_status = DECODER_DECODE_RN16;
           reader_state->gate_status    = GATE_SEEK_RN16;
 
+          for(int i=0 ; i<100 ; i++) out[written++] = 1;
           transmit(out, &written, query_rep);
           transmit(out, &written, cw_query);
 
@@ -253,6 +255,7 @@ namespace gr
           reader_state->decoder_status = DECODER_DECODE_EPC;
           reader_state->gate_status    = GATE_SEEK_EPC;
 
+          for(int i=0 ; i<100 ; i++) out[written++] = 1;
           transmit(out, &written, frame_sync);
           gen_ack_bits(in);
           transmit_bits(out, &written, ack_bits);
