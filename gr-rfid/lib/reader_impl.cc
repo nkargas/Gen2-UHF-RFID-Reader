@@ -46,8 +46,6 @@ namespace gr
       gr::io_signature::make( 1, 1, sizeof(float)),
       gr::io_signature::make( 1, 1, sizeof(float)))
     {
-      //GR_LOG_INFO(d_logger, "Block initialized");
-
       sample_d = 1.0/dac_rate * pow(10,6);
 
       // Number of samples for transmitting
@@ -58,15 +56,9 @@ namespace gr
       n_delim_s = DELIM_D / sample_d;
       n_trcal_s = TRCAL_D / sample_d;
 
-      //GR_LOG_INFO(d_logger, "Number of samples data 0 : " << n_data0_s);
-      //GR_LOG_INFO(d_logger, "Number of samples data 1 : " << n_data1_s);
-      //GR_LOG_INFO(d_logger, "Number of samples cw : "     << n_cw_s);
-      //GR_LOG_INFO(d_logger, "Number of samples delim : "  << n_delim_s);
-      //GR_LOG_INFO(d_logger, "Number of slots : "          << std::pow(2,FIXED_Q));
-
       // CW waveforms of different sizes
       n_cwquery_s   = (T1_D+T2_D+RN16_D)/sample_d;     //RN16
-      n_cwack_s     = 2*(3*T1_D+T2_D+EPC_D)/sample_d;    //EPC   if it is longer than nominal it wont cause tags to change inventoried flag
+      n_cwack_s     = (T1_D+T2_D+EPC_D)/sample_d;    //EPC   if it is longer than nominal it wont cause tags to change inventoried flag
       n_p_down_s     = (P_DOWN_D)/sample_d;
 
       p_down.resize(n_p_down_s);        // Power down samples
@@ -75,9 +67,6 @@ namespace gr
 
       std::fill_n(cw_query.begin(), cw_query.size(), 1);
       std::fill_n(cw_ack.begin(), cw_ack.size(), 1);
-
-      //GR_LOG_INFO(d_logger, "Carrier wave after a query transmission in samples : "     << n_cwquery_s);
-      //GR_LOG_INFO(d_logger, "Carrier wave after ACK transmission in samples : "        << n_cwack_s);
 
       // Construct vectors (resize() default initialization is zero)
       data_0.resize(n_data0_s);
@@ -123,12 +112,11 @@ namespace gr
       nak.insert( nak.end(), data_0.begin(), data_0.end() );
       nak.insert( nak.end(), data_0.begin(), data_0.end() );
 
-      timestamp = 0;
       gen_query_bits();
       gen_query_adjust_bits();
     }
 
-    int reader_impl::gen_query_bits()
+    void reader_impl::gen_query_bits()
     {
       int num_ones = 0, num_zeros = 0;
 
@@ -144,11 +132,6 @@ namespace gr
 
       query_bits.insert(query_bits.end(), &Q_VALUE[FIXED_Q][0], &Q_VALUE[FIXED_Q][4]);
       crc_append(query_bits);
-
-      int q_value = 0;
-      for(int i=0 ; i<4 ; i++)
-        q_value += std::pow(2, 3-i) * Q_VALUE[FIXED_Q][i];
-      return q_value;
     }
 
     void reader_impl::gen_ack_bits(const float * in)
@@ -166,12 +149,128 @@ namespace gr
       query_adjust_bits.insert(query_adjust_bits.end(), &Q_UPDN[1][0], &Q_UPDN[1][3]);
     }
 
-    /*
-    * Our virtual destructor.
-    */
-    reader_impl::~reader_impl()
-    {
+    reader_impl::~reader_impl(){}
 
+    void reader_impl::forecast(int noutput_items, gr_vector_int &ninput_items_required)
+    {
+      ninput_items_required[0] = 0;
+    }
+
+    void reader_impl::transmit(float* out, int* written, std::vector<float> bits)
+    {
+      memcpy(&out[*written], &bits[0], sizeof(float) * bits.size());
+      (*written) += bits.size();
+    }
+
+    void reader_impl::transmit_bits(float* out, int* written, std::vector<float> bits)
+    {
+      for(int i=0 ; i<bits.size() ; i++)
+      {
+        if(bits[i] == 1) transmit(out, written, data_1);
+        else transmit(out, written, data_0);
+      }
+    }
+
+    int reader_impl::general_work(int noutput_items, gr_vector_int &ninput_items, gr_vector_const_void_star &input_items, gr_vector_void_star &output_items)
+    {
+      const float* in = (const float*)input_items[0];
+      float* out = (float*)output_items[0];
+      int consumed = 0;
+      int written = 0;
+
+      float tp[2]={1,0};
+
+      if(reader_state->gen2_logic_status != IDLE)
+      {
+        log.open(log_file_path, std::ios::app);
+
+        if(reader_state->gen2_logic_status == START)
+        {
+          log << "preamble= " << n_delim_s + n_data0_s + n_data0_s + n_data1_s + n_trcal_s << std::endl;
+          log << "frame_sync= " << n_delim_s + n_data0_s + n_data0_s + n_data1_s << std::endl;
+          log << "delim= " << n_delim_s << std::endl;
+          log << "data_0= " << n_data0_s << std::endl;
+          log << "rtcal= " << n_data0_s + n_data1_s << std::endl;
+          log << "trcal= " << n_trcal_s << std::endl << std::endl;
+
+          log << "cw_query= " << n_cwquery_s << std::endl;
+          log << "cw_ack= " << n_cwack_s << std::endl;
+          log << "T1= " << T1_D / sample_d << std::endl;
+          log << "T2= " << T2_D / sample_d << std::endl;
+          log << "RN16= " << RN16_D / sample_d << std::endl;
+          log << "EPC= " << EPC_D / sample_d << std::endl << std::endl;
+
+          transmit(out, &written, cw_ack);
+          out[written++] = 0;
+          reader_state->gen2_logic_status = IDLE;
+        }
+        else if(reader_state->gen2_logic_status == SEND_QUERY)
+        {
+          log << std::endl << "┌──────────────────────────────────────────────────" << std::endl;
+          log << "│ Inventory Round: " << reader_state->reader_stats.cur_inventory_round << " | Slot Number: " << reader_state->reader_stats.cur_slot_number << std::endl;
+          std::cout << std::endl << "[" << reader_state->reader_stats.cur_inventory_round << "_" << reader_state->reader_stats.cur_slot_number << "] ";
+          reader_state->reader_stats.n_queries_sent +=1;
+
+          // Controls the other two blocks
+          reader_state->decoder_status = DECODER_DECODE_RN16;
+          reader_state->gate_status    = GATE_SEEK_RN16;
+
+          transmit(out, &written, preamble);
+          gen_query_bits();
+          transmit_bits(out, &written, query_bits);
+          transmit(out, &written, cw_query);
+
+          log << "│ Send Query | Q= " << FIXED_Q << std::endl;
+          log << "├──────────────────────────────────────────────────" << std::endl;
+          std::cout << "Query(Q=" << FIXED_Q << ") | ";
+
+          reader_state->gen2_logic_status = IDLE;
+        }
+        else if(reader_state->gen2_logic_status == SEND_QUERY_REP)
+        {
+          log << "│ Inventory Round: " << reader_state->reader_stats.cur_inventory_round << " | Slot Number: " << reader_state->reader_stats.cur_slot_number << std::endl;
+          std::cout << std::endl << "[" << reader_state->reader_stats.cur_inventory_round << "_" << reader_state->reader_stats.cur_slot_number << "] ";
+          reader_state->reader_stats.n_queries_sent +=1;
+
+          // Controls the other two blocks
+          reader_state->decoder_status = DECODER_DECODE_RN16;
+          reader_state->gate_status    = GATE_SEEK_RN16;
+
+          transmit(out, &written, query_rep);
+          transmit(out, &written, cw_query);
+
+          log << "│ Send QueryRep" << std::endl;
+          log << "├──────────────────────────────────────────────────" << std::endl;
+          std::cout << "QueryRep | ";
+
+          reader_state->gen2_logic_status = IDLE;
+        }
+        else if(reader_state->gen2_logic_status == SEND_ACK && ninput_items[0] == RN16_BITS - 1)
+        {
+          reader_state->reader_stats.n_ack_sent +=1;
+
+          // Controls the other two blocks
+          reader_state->decoder_status = DECODER_DECODE_EPC;
+          reader_state->gate_status    = GATE_SEEK_EPC;
+
+          transmit(out, &written, frame_sync);
+          gen_ack_bits(in);
+          transmit_bits(out, &written, ack_bits);
+          transmit(out, &written, cw_ack);
+
+          reader_state->reader_stats.ack_sent.push_back((std::to_string(reader_state->reader_stats.cur_inventory_round)+"_"+std::to_string(reader_state->reader_stats.cur_slot_number)).c_str());
+          log << "│ Send ACK" << std::endl;
+          log << "├──────────────────────────────────────────────────" << std::endl;
+          std::cout << "ACK | ";
+
+          consumed = ninput_items[0];
+          reader_state->gen2_logic_status = IDLE;
+        }
+        log.close();
+      }
+
+      consume_each (consumed);
+      return written;
     }
 
     int reader_impl::calc_usec(const struct timeval start, const struct timeval end)
@@ -219,226 +318,6 @@ namespace gr
       result << "└──────────────────────────────────────────────────" << std::endl;
 
       result.close();
-    }
-
-    void
-    reader_impl::forecast (int noutput_items, gr_vector_int &ninput_items_required)
-    {
-      ninput_items_required[0] = 0;
-    }
-
-    int
-    reader_impl::general_work (int noutput_items,
-      gr_vector_int &ninput_items,
-      gr_vector_const_void_star &input_items,
-      gr_vector_void_star &output_items)
-    {
-      const float *in = (const float *) input_items[0];
-      float *out =  (float*) output_items[0];
-      std::vector<float> out_message;
-      int n_output;
-      int consumed = 0;
-      int written = 0;
-
-      int q_value;
-
-      std::ofstream log;
-
-      consumed = ninput_items[0];
-      FILE* file = fopen("a", "w"); fprintf(file, "a"); fclose(file); // dummy code (want to remove)
-
-      switch (reader_state->gen2_logic_status)
-      {
-        case START:
-        //GR_LOG_INFO(d_debug_logger, "START");
-
-        memcpy(&out[written], &cw_ack[0], sizeof(float) * cw_ack.size() );
-        written += cw_ack.size();
-        reader_state->gen2_logic_status = SEND_QUERY;
-        break;
-
-        case POWER_DOWN:
-        //GR_LOG_INFO(d_debug_logger, "POWER DOWN");
-        memcpy(&out[written], &p_down[0], sizeof(float) * p_down.size() );
-        written += p_down.size();
-        reader_state->gen2_logic_status = START;
-        break;
-
-        case SEND_NAK_QR:
-        //GR_LOG_INFO(d_debug_logger, "SEND NAK");
-        memcpy(&out[written], &nak[0], sizeof(float) * nak.size() );
-        written += nak.size();
-        memcpy(&out[written], &cw[0], sizeof(float) * cw.size() );
-        written+=cw.size();
-        reader_state->gen2_logic_status = SEND_QUERY_REP;
-        break;
-
-        case SEND_NAK_Q:
-        //GR_LOG_INFO(d_debug_logger, "SEND NAK");
-        memcpy(&out[written], &nak[0], sizeof(float) * nak.size() );
-        written += nak.size();
-        memcpy(&out[written], &cw[0], sizeof(float) * cw.size() );
-        written+=cw.size();
-        reader_state->gen2_logic_status = SEND_QUERY;
-        break;
-
-        case SEND_QUERY:
-        //GR_LOG_INFO(d_debug_logger, "QUERY");
-        //GR_LOG_INFO(d_debug_logger, "INVENTORY ROUND : " << reader_state->reader_stats.cur_inventory_round << " SLOT NUMBER : " << reader_state->reader_stats.cur_slot_number);
-        log.open("debug_message", std::ios::app);
-        log << std::endl << "┌──────────────────────────────────────────────────" << std::endl;
-        log << "│ Inventory Round: " << reader_state->reader_stats.cur_inventory_round << " | Slot Number: " << reader_state->reader_stats.cur_slot_number << std::endl;
-        log.close();
-        std::cout << std::endl << "[" << reader_state->reader_stats.cur_inventory_round << "_" << reader_state->reader_stats.cur_slot_number << "] ";
-        reader_state->reader_stats.n_queries_sent +=1;
-
-        // Controls the other two blocks
-        reader_state->decoder_status = DECODER_DECODE_RN16;
-        reader_state->gate_status    = GATE_SEEK_RN16;
-
-        memcpy(&out[written], &preamble[0], sizeof(float) * preamble.size() );
-        written+=preamble.size();
-
-        q_value = gen_query_bits();
-
-        for(int i = 0; i < query_bits.size(); i++)
-        {
-          if(query_bits[i] == 1)
-          {
-            memcpy(&out[written], &data_1[0], sizeof(float) * data_1.size() );
-            written+=data_1.size();
-          }
-          else
-          {
-            memcpy(&out[written], &data_0[0], sizeof(float) * data_0.size() );
-            written+=data_0.size();
-          }
-        }
-        // Send CW for RN16
-        memcpy(&out[written], &cw_query[0], sizeof(float) * cw_query.size() );
-        written+=cw_query.size();
-
-        log.open("debug_message", std::ios::app);
-        log << "│ Send Query | Q= " << q_value << std::endl;
-        log << "├──────────────────────────────────────────────────" << std::endl;
-        log.close();
-        std::cout << "Query(Q=" << q_value << ") | ";
-
-        // Return to IDLE
-        reader_state->gen2_logic_status = IDLE;
-        break;
-
-        case SEND_ACK:
-        //GR_LOG_INFO(d_debug_logger, "SEND ACK");
-        if (ninput_items[0] == RN16_BITS - 1)
-        {
-          reader_state->reader_stats.n_ack_sent +=1;
-
-          // Controls the other two blocks
-          reader_state->decoder_status = DECODER_DECODE_EPC;
-          reader_state->gate_status    = GATE_SEEK_EPC;
-
-          gen_ack_bits(in);
-
-          // Send FrameSync
-          memcpy(&out[written], &frame_sync[0], sizeof(float) * frame_sync.size() );
-          written += frame_sync.size();
-
-          for(int i = 0; i < ack_bits.size(); i++)
-          {
-            if(ack_bits[i] == 1)
-            {
-              memcpy(&out[written], &data_1[0], sizeof(float) * data_1.size() );
-              written += data_1.size();
-            }
-            else
-            {
-              memcpy(&out[written], &data_0[0], sizeof(float) * data_0.size() );
-              written += data_0.size();
-            }
-          }
-
-          reader_state->reader_stats.ack_sent.push_back((std::to_string(reader_state->reader_stats.cur_inventory_round)+"_"+std::to_string(reader_state->reader_stats.cur_slot_number)).c_str());
-          log.open("debug_message", std::ios::app);
-          log << "│ Send ACK" << std::endl;
-          log << "├──────────────────────────────────────────────────" << std::endl;
-          log.close();
-          std::cout << "ACK | ";
-
-          consumed = ninput_items[0];
-          reader_state->gen2_logic_status = SEND_CW;
-        }
-        break;
-
-        case SEND_CW:
-        //GR_LOG_INFO(d_debug_logger, "SEND CW");
-        memcpy(&out[written], &cw_ack[0], sizeof(float) * cw_ack.size() );
-        written += cw_ack.size();
-        reader_state->gen2_logic_status = IDLE;      // Return to IDLE
-        break;
-
-        case SEND_QUERY_REP:
-        //GR_LOG_INFO(d_debug_logger, "SEND QUERY_REP");
-        //GR_LOG_INFO(d_debug_logger, "INVENTORY ROUND : " << reader_state->reader_stats.cur_inventory_round << " SLOT NUMBER : " << reader_state->reader_stats.cur_slot_number);
-        log.open("debug_message", std::ios::app);
-        log << "│ Inventory Round: " << reader_state->reader_stats.cur_inventory_round << " | Slot Number: " << reader_state->reader_stats.cur_slot_number << std::endl;
-        log.close();
-        std::cout << std::endl << "[" << reader_state->reader_stats.cur_inventory_round << "_" << reader_state->reader_stats.cur_slot_number << "] ";
-
-        // Controls the other two blocks
-        reader_state->decoder_status = DECODER_DECODE_RN16;
-        reader_state->gate_status    = GATE_SEEK_RN16;
-        reader_state->reader_stats.n_queries_sent +=1;
-
-        memcpy(&out[written], &query_rep[0], sizeof(float) * query_rep.size() );
-        written += query_rep.size();
-
-        memcpy(&out[written], &cw_query[0], sizeof(float) * cw_query.size());
-        written+=cw_query.size();
-
-        log.open("debug_message", std::ios::app);
-        log << "│ Send QueryRep" << std::endl;
-        log << "├──────────────────────────────────────────────────" << std::endl;
-        log.close();
-        std::cout << "QueryRep | ";
-
-        reader_state->gen2_logic_status = IDLE;    // Return to IDLE
-        break;
-
-        case SEND_QUERY_ADJUST:
-        //GR_LOG_INFO(d_debug_logger, "SEND QUERY_ADJUST");
-        // Controls the other two blocks
-        reader_state->decoder_status = DECODER_DECODE_RN16;
-        reader_state->gate_status    = GATE_SEEK_RN16;
-        reader_state->reader_stats.n_queries_sent +=1;
-
-        memcpy(&out[written], &frame_sync[0], sizeof(float) * frame_sync.size() );
-        written += frame_sync.size();
-
-        for(int i = 0; i < query_adjust_bits.size(); i++)
-        {
-          if(query_adjust_bits[i] == 1)
-          {
-            memcpy(&out[written], &data_1[0], sizeof(float) * data_1.size() );
-            written+=data_1.size();
-          }
-          else
-          {
-            memcpy(&out[written], &data_0[0], sizeof(float) * data_0.size() );
-            written+=data_0.size();
-          }
-        }
-        memcpy(&out[written], &cw_query[0], sizeof(float) * cw_query.size());
-        written+=cw_query.size();
-        reader_state->gen2_logic_status = IDLE;    // Return to IDLE
-        break;
-
-        default:
-        // IDLE
-        break;
-      }
-      consume_each (consumed);
-      return written;
     }
 
     /* Function adapted from https://www.cgran.org/wiki/Gen2 */
@@ -503,5 +382,5 @@ namespace gr
       for (int i = 4; i >= 0; i--)
       q.push_back(crc[i]);
     }
-  } /* namespace rfid */
-} /* namespace gr */
+  }
+}

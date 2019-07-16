@@ -25,39 +25,38 @@
 #include <vector>
 #include <queue>
 #include <fstream>
-namespace gr {
-  namespace rfid {
 
+namespace gr
+{
+  namespace rfid
+  {
     class reader_impl : public reader
     {
-     private:
-      int s_rate, d_rate,  n_cwquery_s,  n_cwack_s,n_p_down_s;
-      float sample_d, n_data0_s, n_data1_s, n_cw_s, n_pw_s, n_delim_s, n_trcal_s;
-      std::vector<float> data_0, data_1, cw, cw_ack, cw_query, delim, frame_sync, preamble, rtcal, trcal, query_bits, ack_bits, query_rep,nak, query_adjust_bits,p_down;
-      int q_change; // 0-> increment, 1-> unchanged, 2-> decrement
-      void gen_query_adjust_bits();
-      void crc_append(std::vector<float> & q);
-      int gen_query_bits();
-      void gen_ack_bits(const float * in);
+      private:
+        int s_rate, d_rate,  n_cwquery_s,  n_cwack_s,n_p_down_s;
+        float sample_d, n_data0_s, n_data1_s, n_cw_s, n_pw_s, n_delim_s, n_trcal_s;
+        std::vector<float> data_0, data_1, cw, cw_ack, cw_query, delim, frame_sync, preamble, rtcal, trcal, query_bits, ack_bits, query_rep,nak, query_adjust_bits,p_down;
+        int q_change; // 0-> increment, 1-> unchanged, 2-> decrement
 
-      int timestamp;
+        void gen_query_bits();
+        void gen_ack_bits(const float * in);
+        void gen_query_adjust_bits();
+        void crc_append(std::vector<float> & q);
 
-    public:
-      int calc_usec(const struct timeval start, const struct timeval end);
-      void print_results();
-      reader_impl(int sample_rate, int dac_rate);
-      ~reader_impl();
+        std::ofstream log;
+        int calc_usec(const struct timeval start, const struct timeval end);
+        void print_results();
 
+        void transmit(float*, int*, std::vector<float>);
+        void transmit_bits(float*, int*, std::vector<float>);
 
-      void forecast (int noutput_items, gr_vector_int &ninput_items_required);
-
-      int general_work(int noutput_items,
-           gr_vector_int &ninput_items,
-           gr_vector_const_void_star &input_items,
-           gr_vector_void_star &output_items);
+      public:
+        reader_impl(int sample_rate, int dac_rate);
+        ~reader_impl();
+        void forecast(int, gr_vector_int&);
+        int general_work(int, gr_vector_int&, gr_vector_const_void_star&, gr_vector_void_star&);
     };
+  }
+}
 
-  } // namespace rfid
-} // namespace gr
-
-#endif /* INCLUDED_RFID_READER_IMPL_H */
+#endif

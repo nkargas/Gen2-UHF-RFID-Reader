@@ -27,6 +27,15 @@
 #include <sys/time.h>
 #include <stdio.h>
 
+#define AMP_LOWBOUND 0.001
+#define AMP_POS_THRESHOLD 0.005
+#define AMP_NEG_THRESHOLD 0.05
+#define MIN_PULSE 5
+#define T1_LEN 400
+
+#define MAX_SEARCH_TRACK 10000
+#define MAX_SEARCH_READY 8000
+
 namespace gr
 {
   namespace rfid
@@ -45,29 +54,12 @@ namespace gr
     : gr::block("gate",
     gr::io_signature::make(1, 1, sizeof(gr_complex)),
     gr::io_signature::make(1, 1, sizeof(gr_complex))),
-    n_samples(0), win_index(0), dc_index(0), num_pulses(0), signal_state(NEG_EDGE), avg_ampl(0), dc_est(0,0)
+    n_samples(0), avg_amp(0), num_pulses(0)
     {
       n_samples_T1       = T1_D       * (sample_rate / pow(10,6));
-      n_samples_PW       = PW_D       * (sample_rate / pow(10,6));
       n_samples_TAG_BIT  = TPRI_D  * (sample_rate / pow(10,6));
 
-      win_length = WIN_SIZE_D * (sample_rate/ pow(10,6));
-      dc_length  = DC_SIZE_D  * (sample_rate / pow(10,6));
-
-      win_samples.resize(win_length);
-      dc_samples.resize(dc_length);
-
-      //GR_LOG_INFO(d_logger, "T1 samples : " << n_samples_T1);
-      //GR_LOG_INFO(d_logger, "PW samples : " << n_samples_PW);
-
-      //GR_LOG_INFO(d_logger, "Samples of Tag bit : "<< n_samples_TAG_BIT);
-      //GR_LOG_INFO(d_logger, "Size of window : " << win_length);
-      //GR_LOG_INFO(d_logger, "Size of window for dc offset estimation : " << dc_length);
-      //GR_LOG_INFO(d_logger, "Duration of window for dc offset estimation : " << DC_SIZE_D << " us");
-
-
       // First block to be scheduled
-      //GR_LOG_INFO(d_logger, "Initializing reader state...");
       initialize_reader_state();
     }
 
@@ -93,107 +85,148 @@ namespace gr
       const gr_complex *in = (const gr_complex *) input_items[0];
       gr_complex *out = (gr_complex *) output_items[0];
 
-      int n_items = ninput_items[0];
-      int number_samples_consumed = n_items;
-      float sample_ampl = 0;
+      int number_samples_consumed = 0;
       int written = 0;
 
-      if( (reader_state-> reader_stats.n_queries_sent   > MAX_NUM_QUERIES ||
-        reader_state-> reader_stats.tag_reads.size() > NUMBER_UNIQUE_TAGS) &&
-        reader_state-> status != TERMINATED)
-      {
-        reader_state-> status = TERMINATED;
-        //GR_LOG_INFO(d_logger, "Termination");
-      }
+      std::ofstream log;
+      log.open(log_file_path, std::ios::app);
 
-        // Gate block is controlled by the Gen2 Logic block
-      if(reader_state->gate_status == GATE_SEEK_EPC)
+      number_samples_consumed = ninput_items[0];
+      if(reader_state->gate_status != GATE_CLOSED)
       {
-        reader_state->gate_status = GATE_CLOSED;
-        reader_state->n_samples_to_ungate = (EPC_BITS + TAG_PREAMBLE_BITS + EXTRA_BITS) * n_samples_TAG_BIT;
-        n_samples = 0;
-      }
-      else if (reader_state->gate_status == GATE_SEEK_RN16)
-      {
-        reader_state->gate_status = GATE_CLOSED;
-        reader_state->n_samples_to_ungate = (RN16_BITS + TAG_PREAMBLE_BITS + EXTRA_BITS) * n_samples_TAG_BIT;
-        n_samples = 0;
-      }
-
-      if (reader_state->status == RUNNING)
-      {
-        for(int i = 0; i < n_items; i++)
+        for(int i=0 ; i<ninput_items[0] ; i++)
         {
-          // Tracking average amplitude
-          sample_ampl = std::abs(in[i]);
-          avg_ampl = avg_ampl + (sample_ampl - win_samples[win_index])/win_length;
-          win_samples[win_index] = sample_ampl;
-          win_index = (win_index + 1) % win_length;
+          float sample = std::abs(in[i]);
 
-          //Threshold for detecting negative/positive edges
-          sample_thresh = avg_ampl * THRESH_FRACTION;
-
-          if( !(reader_state->gate_status == GATE_OPEN) )
+          if(reader_state->gate_status == GATE_START)
           {
-            //Tracking DC offset (only during T1)
-            dc_est =  dc_est + (in[i] - dc_samples[dc_index])/std::complex<float>(dc_length,0);
-            dc_samples[dc_index] = in[i];
-            dc_index = (dc_index + 1) % dc_length;
-
-            n_samples++;
-
-            // Potitive edge -> Negative edge
-            if( sample_ampl < sample_thresh && signal_state == POS_EDGE)
+            if(++n_samples <= 28000) avg_amp = (avg_amp + sample) / 2;
+            else
             {
-              n_samples = 0;
-              signal_state = NEG_EDGE;
-            }
-            // Negative edge -> Positive edge
-            else if (sample_ampl > sample_thresh && signal_state == NEG_EDGE)
-            {
-              signal_state = POS_EDGE;
-              if (n_samples > n_samples_PW/2)
-                num_pulses++;
-              else
-                num_pulses = 0;
-              n_samples = 0;
-            }
+              log << "n_samples_TAG_BIT= " << n_samples_TAG_BIT << std::endl;
+              log << "Average of first 28000 amplitudes= " << avg_amp << std::endl;
 
-            if(n_samples > n_samples_T1 && signal_state == POS_EDGE && num_pulses > NUM_PULSES_COMMAND)
-            {
-              //GR_LOG_INFO(d_debug_logger, "READER COMMAND DETECTED");
-
-              reader_state->gate_status = GATE_OPEN;
-
-              reader_state->magn_squared_samples.resize(0);
-
-              reader_state->magn_squared_samples.push_back(std::norm(in[i] - dc_est));
-              out[written] = in[i] - dc_est; // Remove offset from complex samples
-              written++;
-
-              num_pulses = 0;
-              n_samples =  1; // Count number of samples passed to the next block
-            }
-          } // if( !(reader_state->gate_status == GATE_OPEN) )
-          else
-          {
-            n_samples++;
-
-            reader_state->magn_squared_samples.push_back(std::norm(in[i] - dc_est));
-            out[written] = in[i] - dc_est; // Remove offset from complex samples
-
-            written++;
-            if (n_samples >= reader_state->n_samples_to_ungate)
-            {
+              reader_state->gen2_logic_status = SEND_QUERY;
               reader_state->gate_status = GATE_CLOSED;
-              number_samples_consumed = i+1;
+              number_samples_consumed = i-1;
               break;
             }
-          } // else
-        } // for(int i = 0; i < n_items; i++)
-      } // if (reader_state->status == RUNNING)
-    consume_each (number_samples_consumed);
-    return written;
-    } // gate_impl::general_work
-  } /* namespace rfid */
-} /* namespace gr */
+          }
+          else if(reader_state->gate_status == GATE_SEEK_RN16)
+          {
+            log << "│ Gate seek RN16.." << std::endl;
+            reader_state->n_samples_to_ungate = (RN16_BITS + TAG_PREAMBLE_BITS + EXTRA_BITS) * n_samples_TAG_BIT;
+            reader_state->gate_status = GATE_SEEK;
+          }
+          else if(reader_state->gate_status == GATE_SEEK_EPC)
+          {
+            log << "│ Gate seek EPC.." << std::endl;
+            reader_state->n_samples_to_ungate = (EPC_BITS + TAG_PREAMBLE_BITS + EXTRA_BITS) * n_samples_TAG_BIT;
+            reader_state->gate_status = GATE_SEEK;
+          }
+          if(reader_state->gate_status == GATE_SEEK)
+          {
+            reader_state->gate_status = GATE_TRACK;
+            signal_state = NEG_EDGE;
+            num_pulses = 0;
+            max_count = MAX_SEARCH_TRACK;
+          }
+          else if(reader_state->gate_status == GATE_TRACK)
+          {
+            if(--max_count <= 0)
+            {//log<<std::endl;
+              gate_fail();
+              number_samples_consumed = i-1;
+              break;
+            }//og<<sample<<" ";
+            if(sample < AMP_LOWBOUND) continue;
+
+            if(signal_state == NEG_EDGE && sample - avg_amp > AMP_POS_THRESHOLD)
+            {
+              signal_state = POS_EDGE;
+            }
+            else if(signal_state == POS_EDGE && avg_amp - sample > AMP_NEG_THRESHOLD)
+            {
+              signal_state = NEG_EDGE;
+              if(++num_pulses > MIN_PULSE)
+              {//log<<std::endl;
+                log << "│ Gate ready!" << std::endl;
+                std::cout << "Command found | ";
+                reader_state->gate_status = GATE_READY;
+                n_samples = 0;
+                max_count = MAX_SEARCH_READY;
+              }
+            }
+          }
+          else if(reader_state->gate_status == GATE_READY)
+          {
+            if(--max_count <= 0)
+            {//log<<std::endl;
+              gate_fail();
+              number_samples_consumed = i-1;
+              break;
+            }//log<<sample<<" ";
+            if(sample < AMP_LOWBOUND) continue;
+
+            if(avg_amp - sample > AMP_NEG_THRESHOLD) n_samples = 0;
+            else if(n_samples++ > T1_LEN)
+            {//log<<std::endl;
+              log << "│ Gate open!" << std::endl;
+              log << "├──────────────────────────────────────────────────" << std::endl;
+              reader_state->gate_status = GATE_OPEN;
+              n_samples = 0;
+              number_samples_consumed = i-1;
+              break;
+            }
+          }
+          else if(reader_state->gate_status == GATE_OPEN)
+          {
+            if(++n_samples > reader_state->n_samples_to_ungate)
+            {
+              reader_state->gate_status = GATE_CLOSED;
+              number_samples_consumed = i-1;
+              break;
+            }
+            out[written++] = in[i];
+          }
+        }
+      }
+
+      log.close();
+      consume_each(number_samples_consumed);
+      return written;
+    }
+
+    void gate_impl::gate_fail(void)
+    {
+      std::ofstream log;
+      log.open(log_file_path, std::ios::app);
+
+      log << "│ Gate search FAIL!" << std::endl;
+      std::cout << "Gate FAIL!!";
+      reader_state->gate_status = GATE_CLOSED;
+
+      reader_state->reader_stats.cur_slot_number++;
+      if(reader_state->reader_stats.cur_slot_number > reader_state->reader_stats.max_slot_number)
+      {
+        reader_state->reader_stats.cur_inventory_round ++;
+        reader_state->reader_stats.cur_slot_number = 1;
+
+        log << "└──────────────────────────────────────────────────" << std::endl;
+        if(reader_state->reader_stats.cur_inventory_round > MAX_NUM_QUERIES)
+        {
+          reader_state->reader_stats.cur_inventory_round--;
+          reader_state->decoder_status = DECODER_TERMINATED;
+        }
+        else reader_state->gen2_logic_status = SEND_QUERY;
+      }
+      else
+      {
+        log << "├──────────────────────────────────────────────────" << std::endl;
+        reader_state->gen2_logic_status = SEND_QUERY_REP;
+      }
+
+      log.close();
+    }
+  }
+}

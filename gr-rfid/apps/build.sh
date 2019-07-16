@@ -1,4 +1,4 @@
-#git pull origin 
+#git pull origin master
 cd ../build
 make
 make test

@@ -33,13 +33,12 @@ namespace gr {
 
         enum SIGNAL_STATE {NEG_EDGE, POS_EDGE};
 
-        int   n_samples, n_samples_T1, n_samples_PW, n_samples_TAG_BIT;
-        int  win_index, dc_index, win_length, dc_length, s_rate;
-        float avg_ampl, num_pulses, sample_thresh;
+        int n_samples, n_samples_T1, n_samples_TAG_BIT;
 
-        std::vector<float> win_samples,cw_samples;
-        std::vector<gr_complex> dc_samples;
-        gr_complex dc_est;
+        double avg_amp;
+        int max_count;
+        int num_pulses;
+
 
         SIGNAL_STATE signal_state;
 
@@ -53,6 +52,8 @@ namespace gr {
              gr_vector_int &ninput_items,
              gr_vector_const_void_star &input_items,
              gr_vector_void_star &output_items);
+
+        void gate_fail();
     };
   } // namespace rfid
 } // namespace gr

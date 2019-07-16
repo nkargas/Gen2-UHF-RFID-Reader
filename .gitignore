@@ -1,5 +1,6 @@
 gr-rfid/apps/debug_data/
-gr-rfid/apps/debug_message
+gr-rfid/apps/graph/
+gr-rfid/apps/log
 gr-rfid/apps/result
 gr-rfid/build/
 gr-rfid/misc/data/

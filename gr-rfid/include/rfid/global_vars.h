@@ -26,15 +26,13 @@
 #include <sys/time.h>
 #include <fstream>
 
-//#define DEBUG_MESSAGE
-
 namespace gr {
   namespace rfid {
 
     enum STATUS               {RUNNING, TERMINATED};
     enum GEN2_LOGIC_STATUS  {SEND_QUERY, SEND_ACK, SEND_QUERY_REP, IDLE, SEND_CW, START, SEND_QUERY_ADJUST, SEND_NAK_QR, SEND_NAK_Q, POWER_DOWN};
-    enum GATE_STATUS        {GATE_OPEN, GATE_CLOSED, GATE_SEEK_RN16, GATE_SEEK_EPC};
-    enum DECODER_STATUS     {DECODER_DECODE_RN16, DECODER_DECODE_EPC};
+    enum GATE_STATUS        {GATE_START, GATE_TRACK, GATE_READY, GATE_OPEN, GATE_CLOSED, GATE_SEEK, GATE_SEEK_RN16, GATE_SEEK_EPC};
+    enum DECODER_STATUS     {DECODER_DECODE_RN16, DECODER_DECODE_EPC, DECODER_TERMINATED};
 
     struct READER_STATS
     {
@@ -95,7 +93,7 @@ namespace gr {
     const int DR_D          = 8;
     const float BLF_D     = T_READER_FREQ / pow(10,6);  // 0.04
     const int TPRI_D      = 1 / BLF_D;  // 25us
-    const int PW_D        = 12; // Half Tari
+    const int PW_D        = 24; // Half Tari
     const int RTCAL_D     = 6 * PW_D; // 72us
     const int TRCAL_D     = DR_D / BLF_D; // 200us
     const int T1_D        = std::max(RTCAL_D, 10 * TPRI_D);  // 250us
@@ -115,7 +113,7 @@ namespace gr {
     const int RN16_BITS          = 17;  // Dummy bit at the end
     const int EPC_BITS            = 129;  // PC + EPC + CRC16 + Dummy = 6 + 16 + 96 + 16 + 1 = 135
     const int QUERY_LENGTH        = 22;  // Query length in bits
-    const int EXTRA_BITS          = 10; // extra bits to ungate
+    const int EXTRA_BITS          = 12; // extra bits to ungate
 
     // Duration in us
     const int RN16_D       = (RN16_BITS + TAG_PREAMBLE_BITS) * TPRI_D;  // 575us
@@ -162,11 +160,9 @@ namespace gr {
     extern void initialize_reader_state();
 
     // file path
+    const std::string log_file_path = "log";
     const std::string result_file_path = "result";
-    #ifdef DEBUG_MESSAGE
-    const std::string debug_message = "debug_data/";
-    #endif
-
+    const std::string debug_folder_path = "debug_data/";
   } // namespace rfid
 } // namespace gr
 

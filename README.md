@@ -8,7 +8,21 @@ This program is revised version of the Gen2 UHF RFID Reader (https://github.com/
 
 ### Wireless Identification and Sensing Platform (WISP)
 We use WISP(MSP430) as an RFID tag. Normal data rate of WISP is 460kHz, but we modified to 40kHz in order to communicate with this program. Visit below and install the 40kHz version on your WISP tag.
- * https://github.com/whitecloudy/wisp5_436kHz-40kHz/tree/40kHz
+ * https://github.com/whitecloudy/wisp5_436kHz-40kHz/tree/bbd9daa3d0d9aa73ff9cce71c39a5f1cf843d394  
+
+While using recent version of Code Composer Studio, you must install the older version of MSP430 compiler.
+
+Go to Help > Install New Software > Code Generation Tools Updates > TI Compiler Updates > MSP430 Compiler Tools, find and install the version 4.3.8 and version 15.12.7.
+
+After installation, right-click the simpleAckDemo in Project Explorer, check the Properties > General > Project > Compiler version is changed to 4.3.8. Similarly, right-click the wisp-base and check the version is changed to 15.12.7.
+
+This firmware is incomplete so you must modify a value in this firmware. Go to wisp-base/RFID/rfid_Handles.asm line 211.
+<pre><code>CMP.B #0x58, Rscratch1</code></pre>
+
+You must match #0x58 with the CRC of your query command, whenever you change the query command. Because CRC is 5-bits but #0x58 is 8-bits, you should left-align the CRC 5-bits and simply put three zero bits in the right side. Then change it to the hexa-decimal number.
+
+For example, CRC of our query command is 10000. Put three zero bits in the right side(1000 0000), then change it to the hexa-decimal number(0x80).
+<pre><code>CMP.B #0x80, Rscratch1</code></pre>
 
 Get more information at below WISP wiki website.
  * http://wisp5.wispsensor.net
@@ -66,20 +80,30 @@ tx_gain: TX gain
 Change addr value with the address of your USRP reader. (default: 192.168.255.3)
 
 ### gr-rfid/include/global_vars.h
- * line 29: DEBUG_MESSAGE  
-Annotate this line, if you don't want to make the debug files. (dafault: annotated)
-
- * line 75: FIXED_Q  
+ * line 73: FIXED_Q  
 The number of slot is fixed by 2^(FIXED_Q). (default FIXED_Q: 0 / default slot number: 1)
 
- * line 79: MAX_NUM_QUERIES  
+ * line 77: MAX_NUM_QUERIES  
 The program stops after sending this amount of queries. (dafault: 1000)
 
- * line 159: result_file_path  
+* line 163: log_file_path  
+Set the name of the log file. You have to change reader.sh file also. (default: log)
+
+ * line 164: result_file_path  
 Set the name of the result file. You have to change reader.sh file also. (default: result)
 
- * line 161: debug_message  
+ * line 165: debug_folder_path  
 Set the name of the folder which saves the debug files. You have to change reader.sh file also. (dafault: debug_data/)
+
+### gr-rfid/lib/tag_decoder_impl.h
+ * line 31: DEBUG_TAG_DECODER_IMPL_INPUT  
+Annotate this line, if you don't want to make the debug files about all input samples received in tag_decoder block. (dafault: annotated)
+
+ * line 32: DEBUG_TAG_DECODER_IMPL_PREAMBLE  
+Annotate this line, if you don't want to make the debug files about preamble samples detected by tag_decoder block. (dafault: annotated)
+
+ * line 33: DEBUG_TAG_DECODER_IMPL_SAMPLE  
+Annotate this line, if you don't want to make the debug files about data samples detected by tag_decoder block. (dafault: annotated)
 
 ## Execution
 Execute the "gr-rfid/apps/reader.py" python file. You must delete the "debug_data" folder before the every execution, because the program does not automatically remove the debug files from the previous execution. For convenience, there is a script file which automatically delete the unnecessary files. Use "reader.sh" rather than directly executing "reader.py".
@@ -100,14 +124,16 @@ If you want to reenact the execution, backup the "source" file in somewhere. You
 As the result of the execution, below files are created.
 
 ### Text File
- * gr-rfid/apps/debug_message  
+ * gr-rfid/apps/log  
 Logs the flow of the program. It includes decoded RN16 bits and EPC bits.
  * gr-rfid/apps/result  
 Logs the result of the program. It includes the detected tag IDs and the number of reads.
- * gr-rfid/apps/debug_data/(inventory_round)_(slot_number)  
-Logs the squared normalized value of samples from each inventory round and slot number. It includes detailed flow of decoding process.
- * gr-rfid/apps/debug_data/(inventory_round)_(slot_number)_iq  
-Logs the real and imaginary value of samples from each inventory round and slot number.
+ * gr-rfid/apps/debug_data/log/(inventory_round)_(slot_number)  
+Logs the detailed decoding process of RN16 bits and EPC bits.
+ * gr-rfid/apps/debug_data/(RN16/EPC)_(input/preamble/sample)/(inventory_round)_(slot_number)  
+Logs the squared normalized value of all input or preamble or data samples from each inventory round and slot number.
+ * gr-rfid/apps/debug_data/(RN16/EPC)_(input/preamble/sample)/(inventory_round)_(slot_number)_(I/Q)  
+Logs the real or imaginary value of all input or preamble or data samples from each inventory round and slot number.
 
 ### Plot File
  * gr-rfid/misc/data/source  
