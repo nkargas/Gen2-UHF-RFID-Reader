@@ -24,6 +24,7 @@
 #include <rfid/tag_decoder.h>
 #include <vector>
 #include "rfid/global_vars.h"
+#include "IPC_controller_forRN16.h"
 #include <time.h>
 #include <numeric>
 #include <fstream>
@@ -31,6 +32,7 @@
 //#define DEBUG_TAG_DECODER_IMPL_INPUT
 //#define DEBUG_TAG_DECODER_IMPL_PREAMBLE
 //#define DEBUG_TAG_DECODER_IMPL_SAMPLE
+//define __DEBUG_LOG__
 
 namespace gr
 {
@@ -42,6 +44,7 @@ namespace gr
         float n_samples_TAG_BIT;
         int s_rate;
         char * char_bits;
+        IPC_controller_forRN16 ipc;
 
         class sample_information
         {
@@ -74,23 +77,25 @@ namespace gr
 
         // tag_decoder_decoder.cc
         int tag_sync(sample_information*, int);
-        std::vector<float> tag_detection(sample_information*, int, int);
+        std::vector<float> tag_detection(sample_information*, int, int, double*);
         int determine_first_mask_level(sample_information*, int);
         int decode_single_bit(sample_information* in, int, int);
 
         // debug_message
         std::string current_round_slot;
+#ifdef __DEBUG_LOG__
         std::ofstream log;
         std::ofstream debug_log;
-        #ifdef DEBUG_TAG_DECODER_IMPL_INPUT
+#endif
+#ifdef DEBUG_TAG_DECODER_IMPL_INPUT
         void debug_input(sample_information*, int, std::string);
-        #endif
-        #ifdef DEBUG_TAG_DECODER_IMPL_PREAMBLE
+#endif
+#ifdef DEBUG_TAG_DECODER_IMPL_PREAMBLE
         void debug_preamble(sample_information*, int, std::string, int);
-        #endif
-        #ifdef DEBUG_TAG_DECODER_IMPL_SAMPLE
+#endif
+#ifdef DEBUG_TAG_DECODER_IMPL_SAMPLE
         void debug_sample(sample_information*, int, std::string, int);
-        #endif
+#endif
 
       public:
         tag_decoder_impl(int, std::vector<int>);
