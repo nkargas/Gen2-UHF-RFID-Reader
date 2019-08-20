@@ -116,6 +116,7 @@ namespace gr
           debug_log << "Preamble detection fail" << std::endl << std::endl;
 #endif
           std::cout << "\t\t\t\t\tPreamble FAIL!!";
+          ipc.send_failed();
           goto_next_slot();
         }
         else
@@ -155,10 +156,9 @@ namespace gr
 
     void tag_decoder_impl::decode_RN16(sample_information* ys, int index, float* out)
     {
-      double avg_corr = 0;
-      std::vector<float> RN16_bits = tag_detection(ys, index, RN16_BITS-1, &avg_corr);  // RN16_BITS includes one dummy bit
+      std::vector<float> RN16_bits = tag_detection(ys, index, RN16_BITS-1);  // RN16_BITS includes one dummy bit
 
-      ipc.send_avg_corr(RN16_bits, avg_corr);
+      ipc.send_avg_corr(RN16_bits,(double)ys->corr(), ys->complex_corr());
 
 #ifdef __DEBUG_LOG__
       // write RN16_bits to the next block
@@ -194,15 +194,16 @@ namespace gr
 #endif
 
       std::cout << "RN16 decoded | ";
-      reader_state->gen2_logic_status = SEND_ACK;
+      //reader_state->gen2_logic_status = SEND_ACK;
+      
+      goto_next_slot();      
     }
 
 
 
     void tag_decoder_impl::decode_EPC(sample_information* ys, int index)
     {
-      double avg_corr = 0;
-      std::vector<float> EPC_bits = tag_detection(ys, index, EPC_BITS-1, &avg_corr);  // EPC_BITS includes one dummy bit
+      std::vector<float> EPC_bits = tag_detection(ys, index, EPC_BITS-1);  // EPC_BITS includes one dummy bit
 
       // convert EPC_bits from float to char in order to use Buettner's function
      

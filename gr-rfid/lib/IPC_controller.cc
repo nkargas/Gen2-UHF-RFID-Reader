@@ -92,6 +92,7 @@ int IPC_controller::send_sync(){
     return -1;
   }
 
+  std::cout <<"Waiting SYNC ACK"<<std::endl;
   if(wait_ack() == -1){
     std::cout<< "SYNC ACK Error"<<std::endl;
     return -1;

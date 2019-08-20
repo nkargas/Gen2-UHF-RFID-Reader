@@ -54,6 +54,7 @@ namespace gr
             std::vector<float> _norm_in;
 
             float _corr;
+            gr_complex _complex_corr;
 
           public:
             sample_information();
@@ -61,12 +62,14 @@ namespace gr
             ~sample_information();
 
             void set_corr(float);
+            void set_complex_corr(gr_complex);
 
             gr_complex in(int);
             int total_size(void);
             float norm_in(int);
 
             float corr(void);
+            gr_complex complex_corr(void);
         };
 
         // tag_decoder_impl.cc
@@ -77,9 +80,9 @@ namespace gr
 
         // tag_decoder_decoder.cc
         int tag_sync(sample_information*, int);
-        std::vector<float> tag_detection(sample_information*, int, int, double*);
+        std::vector<float> tag_detection(sample_information*, int, int);
         int determine_first_mask_level(sample_information*, int);
-        int decode_single_bit(sample_information* in, int, int);
+        int decode_single_bit(sample_information* in, int, int, int);
 
         // debug_message
         std::string current_round_slot;

@@ -5,7 +5,7 @@
 
 #include "tag_decoder_impl.h"
 
-#define SHIFT_SIZE 3  // used in tag_detection
+#define SHIFT_SIZE 2  // used in tag_detection
 
 //#define __DEBUG__
 
@@ -78,39 +78,44 @@ namespace gr
       else return -1;
     }
 
-    std::vector<float> tag_decoder_impl::tag_detection(sample_information* ys, int index, int n_expected_bit, double* avg_corr)
+    std::vector<float> tag_decoder_impl::tag_detection(sample_information* ys, int index, int n_expected_bit)
       // This method decodes n_expected_bit of data by using previous methods, and returns the vector of the decoded data.
       // index: start point of "data bit", do not decrease half bit!
     {
       std::vector<float> decoded_bits;
 
       int mask_level = determine_first_mask_level(ys, index);
+      int complex_mask_level = -1;
       int shift = 0;
       double max_corr_sum = 0.0f;
- 
+      gr_complex max_complex_corr_sum(0.0, 0.0);
 
       for(int i=0 ; i<n_expected_bit ; i++)
       {
         int idx = index + i*n_samples_TAG_BIT + shift;  // start point of decoding bit with shifting
         float max_corr = 0.0f;
+        gr_complex max_complex_corr(0.0, 0.0);
         int max_index;
         int curr_shift;
 
         // shifting from idx-SHIFT_SIZE to idx+SHIFT_SIZE
         for(int j=0 ; j<(SHIFT_SIZE*2 + 1) ; j++)
         {
-          int index = decode_single_bit(ys, idx+j-SHIFT_SIZE, mask_level);
+          int index = decode_single_bit(ys, idx+j-SHIFT_SIZE, mask_level, complex_mask_level);
           float corr = ys->corr();
 
           if(corr > max_corr)
           {
             max_corr = corr;
             max_index = index;
+            max_complex_corr = ys->complex_corr();
             curr_shift = j - SHIFT_SIZE;  // find the best current shift value
           }
         }
 
         max_corr_sum += max_corr;
+        max_complex_corr_sum += max_complex_corr;
+
         
 #ifdef __DEBUG__
         debug_log << "[" << i+1 << "th bit]\tcorr=";
@@ -122,14 +127,17 @@ namespace gr
         else debug_log << " (low start)" << std::endl;
 #endif
 
-        if(max_index) mask_level *= -1; // change mask_level(start level of the next bit) when the decoded bit is 1
+        if(max_index){
+          mask_level *= -1; // change mask_level(start level of the next bit) when the decoded bit is 1
+          complex_mask_level *= -1;
+        }
 
         decoded_bits.push_back(max_index);
         shift += curr_shift;  // update the shift value
       }
 
-      if(avg_corr != NULL)
-        *avg_corr = max_corr_sum/n_expected_bit;
+      ys->set_corr(max_corr_sum/n_expected_bit);
+      ys->set_complex_corr(max_complex_corr_sum/(float)n_expected_bit);
 
       return decoded_bits;
     }
@@ -140,15 +148,15 @@ namespace gr
       // If the first bit starts with high level, it returns 0.
       // index: start point of "data bit", do not decrease half bit!
     {
-      decode_single_bit(ys, index, -1);
+      decode_single_bit(ys, index, -1, -1);
       float low_level_corr = ys->corr();
 
-      decode_single_bit(ys, index, 1);
+      decode_single_bit(ys, index, 1, 1);
       if(low_level_corr > ys->corr()) return -1;
       else return 1;
     }
 
-    int tag_decoder_impl::decode_single_bit(sample_information* ys, int index, int mask_level)
+    int tag_decoder_impl::decode_single_bit(sample_information* ys, int index, int mask_level, int complex_mask_level)
       // This method decodes single bit and returns the decoded value and the correlation score.
       // index: start point of "data bit", do not decrease half bit!
       // mask_level: start level of "decoding bit". (-1)low level start, (1)high level start.
@@ -159,19 +167,27 @@ namespace gr
       };
 
       if(mask_level == -1) mask_level = 0;  // convert for indexing
+      if(complex_mask_level == -1) complex_mask_level = 0;  // convert for indexing
+
 
       float max_corr = 0.0f;
+      gr_complex max_complex_corr(0.0, 0.0);
       int max_index = -1;
 
       float average_amp = 0.0f;
-      for(int j=-(n_samples_TAG_BIT*0.5) ; j<(n_samples_TAG_BIT*1.5) ; j++)
+      gr_complex average_complex_amp = std::complex<float>(0.0,0.0);
+      for(int j=-(n_samples_TAG_BIT*0.5) ; j<(n_samples_TAG_BIT*1.5) ; j++){
         average_amp += ys->norm_in(index+j);
+        average_complex_amp += ys->in(index+j);
+      }
       average_amp /= (2*n_samples_TAG_BIT);
+      average_complex_amp /= (2*n_samples_TAG_BIT);
 
       // compare with two masks (0 or 1)
       for(int i=0 ; i<2 ; i++)
       {
         float corr = 0.0f;
+        gr_complex complex_corr(0.0,0.0);
         for(int j=-(n_samples_TAG_BIT*0.5) ; j<(n_samples_TAG_BIT*1.5) ; j++)
         {
           int idx;
@@ -180,17 +196,22 @@ namespace gr
           else if(j < n_samples_TAG_BIT) idx = 2;       // third section (trailing half bit of the data bit)
           else idx = 3;                                 // forth section (leading half bit of the later bit)
 
+          //corr += masks[mask_level][i][idx] * std::sqrt(std::norm((ys->in(index+j) - average_complex_amp)));
           corr += masks[mask_level][i][idx] * (ys->norm_in(index+j) - average_amp);
+          complex_corr += (masks[complex_mask_level][i][idx] * (ys->in(index+j) - average_complex_amp));
         }
+        //corr = std::abs(corr);
 
         if(corr > max_corr)
         {
           max_corr = corr;
           max_index = i;
+          max_complex_corr = complex_corr;
         }
       }
 
-      ys->set_corr(max_corr);
+      ys->set_corr(max_corr/(2*n_samples_TAG_BIT));
+      ys->set_complex_corr(max_complex_corr/(2*n_samples_TAG_BIT));
       return max_index;
     }
   }

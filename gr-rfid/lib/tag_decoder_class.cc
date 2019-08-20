@@ -28,6 +28,7 @@ namespace gr
         _norm_in.push_back(std::sqrt(std::norm(_in[i])));
 
       _corr = 0;
+      _complex_corr = std::complex<float>(0.0,0.0);
     }
 
     tag_decoder_impl::sample_information::~sample_information(){}
@@ -35,6 +36,11 @@ namespace gr
     void tag_decoder_impl::sample_information::set_corr(float __corr)
     {
       _corr = __corr;
+    }
+
+    void tag_decoder_impl::sample_information::set_complex_corr(gr_complex __complex_corr)
+    {
+      _complex_corr = __complex_corr;
     }
 
     gr_complex tag_decoder_impl::sample_information::in(int index)
@@ -55,6 +61,11 @@ namespace gr
     float tag_decoder_impl::sample_information::corr(void)
     {
       return _corr;
+    }
+
+    gr_complex tag_decoder_impl::sample_information::complex_corr(void)
+    {
+      return _complex_corr;
     }
   }
 }
