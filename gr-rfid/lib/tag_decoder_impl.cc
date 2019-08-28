@@ -52,7 +52,6 @@ namespace gr
     {
       char_bits = new char[128];
       n_samples_TAG_BIT = TPRI_D * s_rate / pow(10,6);
-      ipc.send_sync();
     }
 
 
@@ -116,7 +115,6 @@ namespace gr
           debug_log << "Preamble detection fail" << std::endl << std::endl;
 #endif
           std::cout << "\t\t\t\t\tPreamble FAIL!!";
-          ipc.send_failed();
           goto_next_slot();
         }
         else
@@ -158,7 +156,6 @@ namespace gr
     {
       std::vector<float> RN16_bits = tag_detection(ys, index, RN16_BITS-1);  // RN16_BITS includes one dummy bit
 
-      ipc.send_avg_corr(RN16_bits,(double)ys->corr(), ys->complex_corr());
 
 #ifdef __DEBUG_LOG__
       // write RN16_bits to the next block

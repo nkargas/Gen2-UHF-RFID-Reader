@@ -32,8 +32,6 @@ list(APPEND rfid_sources
     tag_decoder_impl.cc
     tag_decoder_class.cc
     tag_decoder_decoder.cc
-    IPC_controller.cc
-    IPC_controller_forRN16.cc
 )
 
 set(rfid_sources "${rfid_sources}" PARENT_SCOPE)

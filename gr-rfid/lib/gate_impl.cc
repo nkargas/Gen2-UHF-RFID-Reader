@@ -192,8 +192,6 @@ namespace gr
               log << "├──────────────────────────────────────────────────" << std::endl;
               avg_iq /= (iq_count);
 
-              log<<iq_count<<std::endl;
-
 
               reader_state->gate_status = GATE_OPEN;
               n_samples = 0;
@@ -202,15 +200,12 @@ namespace gr
             }else if(n_samples > (n_samples_PW * 2)){
               iq_count++;
               avg_iq += in[i];
-            }else{
-              log<<n_samples<<", "<<n_samples_PW<<std::endl;
             }
           }
           else if(reader_state->gate_status == GATE_OPEN)
           {
             if(++n_samples > reader_state->n_samples_to_ungate)
             {
-              log<<avg_iq<<std::endl;
               reader_state->gate_status = GATE_CLOSED;
               number_samples_consumed = i-1;
 
@@ -230,7 +225,6 @@ namespace gr
     {
       std::ofstream log;
       log.open(log_file_path, std::ios::app);
-      ipc.send_failed();
 
       log << "│ Gate search FAIL!" << std::endl;
       std::cout << "Gate FAIL!!";

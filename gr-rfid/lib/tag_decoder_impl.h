@@ -24,7 +24,6 @@
 #include <rfid/tag_decoder.h>
 #include <vector>
 #include "rfid/global_vars.h"
-#include "IPC_controller_forRN16.h"
 #include <time.h>
 #include <numeric>
 #include <fstream>
@@ -44,7 +43,6 @@ namespace gr
         float n_samples_TAG_BIT;
         int s_rate;
         char * char_bits;
-        IPC_controller_forRN16 ipc;
 
         class sample_information
         {
