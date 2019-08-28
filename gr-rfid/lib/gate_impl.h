@@ -25,6 +25,7 @@
 #include <vector>
 #include "rfid/global_vars.h"
 #include "IPC_controller_forRN16.h"
+#include <fstream>
 
 namespace gr {
   namespace rfid {
@@ -34,10 +35,14 @@ namespace gr {
 
         enum SIGNAL_STATE {NEG_EDGE, POS_EDGE};
         IPC_controller_forRN16 ipc;
+        std::ofstream time;
 
         int n_samples, n_samples_T1, n_samples_TAG_BIT, n_samples_PW;
 
+        gr_complex avg_iq = gr_complex(0.0,0.0);
         gr_complex avg_amp;
+
+        int iq_count = 0;
         int max_count;
         int num_pulses;
 

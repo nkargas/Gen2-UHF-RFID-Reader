@@ -183,6 +183,7 @@ namespace gr
       if(reader_state->gen2_logic_status != IDLE)
       {
         log.open(log_file_path, std::ios::app);
+        time.open("time.csv", std::ios::app);
 
         if(reader_state->gen2_logic_status == START)
         {
@@ -219,6 +220,12 @@ namespace gr
           transmit(out, &written, preamble);
           gen_query_bits();
           transmit_bits(out, &written, query_bits);
+          struct timeval tv;
+          gettimeofday(&tv,NULL);
+          long long time_usec = tv.tv_sec *1000000 + tv.tv_usec - 1566000000000000;
+          time<<time_usec<<", ";
+
+
           transmit(out, &written, cw_query);
 
           log << "│ Send Query | Q= " << FIXED_Q << std::endl;
@@ -240,10 +247,10 @@ namespace gr
           for(int i=0 ; i<100 ; i++) out[written++] = 1;
           transmit(out, &written, query_rep);
           transmit(out, &written, cw_query);
-
           log << "│ Send QueryRep" << std::endl;
           log << "├──────────────────────────────────────────────────" << std::endl;
           std::cout << "QueryRep | ";
+
 
           reader_state->gen2_logic_status = IDLE;
         }
@@ -270,6 +277,7 @@ namespace gr
           reader_state->gen2_logic_status = IDLE;
         }
         log.close();
+        time.close();
       }
 
       consume_each (consumed);
@@ -383,7 +391,7 @@ namespace gr
         memcpy(crc, tmp, 5*sizeof(float));
       }
       for (int i = 4; i >= 0; i--)
-      q.push_back(crc[i]);
+        q.push_back(crc[i]);
     }
   }
 }

@@ -6,6 +6,6 @@ mkdir log
 mkdir RN16_input RN16_preamble RN16_sample
 mkdir EPC_input EPC_preamble EPC_sample
 cd ../
-rm log result
+rm log result time.csv
 python reader.py
 cat result

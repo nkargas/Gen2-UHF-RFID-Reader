@@ -28,8 +28,8 @@
 #include <stdio.h>
 
 #define AMP_LOWBOUND 0.001
-#define AMP_POS_THRESHOLD 0.05
-#define AMP_NEG_THRESHOLD 0.005
+#define AMP_POS_THRESHOLD 0.01
+#define AMP_NEG_THRESHOLD 0.001
 #define MIN_PULSE 5
 #define T1_LEN 400
 
@@ -86,15 +86,14 @@ namespace gr
       const gr_complex *in = (const gr_complex *) input_items[0];
       gr_complex *out = (gr_complex *) output_items[0];
 
-      gr_complex avg_iq(0.0,0.0);
 
       int number_samples_consumed = 0;
       int written = 0;
 
-      int count = 0;
 
       std::ofstream log;
       log.open(log_file_path, std::ios::app);
+      time.open("time.csv", std::ios::app);
 
 //      log<<std::endl<<ninput_items[0]<<std::endl;
 
@@ -186,21 +185,26 @@ namespace gr
 
             if(abs(sample - avg_amp) < AMP_NEG_THRESHOLD){ 
               n_samples = 0;
-              count = 0;
+              iq_count = 0;
               avg_iq = gr_complex(0.0,0.0);
             }else if(n_samples++ > T1_LEN)
             {//log<<std::endl;
               log << "│ Gate open!" << std::endl;
               log << "├──────────────────────────────────────────────────" << std::endl;
-              avg_iq /= (count);
+              avg_iq /= (iq_count);
+
+              log<<iq_count<<std::endl;
+
 
               reader_state->gate_status = GATE_OPEN;
               n_samples = 0;
               number_samples_consumed = i-1;
               break;
             }else if(n_samples > (n_samples_PW * 2)){
-              count++;
+              iq_count++;
               avg_iq += in[i];
+            }else{
+              log<<n_samples<<", "<<n_samples_PW<<std::endl;
             }
           }
           else if(reader_state->gate_status == GATE_OPEN)
@@ -210,6 +214,11 @@ namespace gr
               log<<avg_iq<<std::endl;
               reader_state->gate_status = GATE_CLOSED;
               number_samples_consumed = i-1;
+              struct timeval tv;
+              gettimeofday(&tv,NULL);
+              long long time_usec = tv.tv_sec *1000000 + tv.tv_usec - 1566000000000000;
+              time<<time_usec<<std::endl;
+
               break;
             }
             out[written++] = in[i] - avg_iq;
@@ -218,6 +227,7 @@ namespace gr
       }
 
       log.close();
+      time.close();
       consume_each(number_samples_consumed);
       return written;
     }
@@ -251,7 +261,9 @@ namespace gr
         log << "├──────────────────────────────────────────────────" << std::endl;
         reader_state->gen2_logic_status = SEND_QUERY_REP;
       }
+      time<<0<<std::endl;
 
+      time.close();
       log.close();
     }
   }
