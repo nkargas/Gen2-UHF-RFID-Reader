@@ -183,7 +183,6 @@ namespace gr
       if(reader_state->gen2_logic_status != IDLE)
       {
         log.open(log_file_path, std::ios::app);
-        time.open("time.csv", std::ios::app);
 
         if(reader_state->gen2_logic_status == START)
         {
@@ -220,10 +219,6 @@ namespace gr
           transmit(out, &written, preamble);
           gen_query_bits();
           transmit_bits(out, &written, query_bits);
-          struct timeval tv;
-          gettimeofday(&tv,NULL);
-          long long time_usec = tv.tv_sec *1000000 + tv.tv_usec - 1566000000000000;
-          time<<time_usec<<", ";
 
 
           transmit(out, &written, cw_query);
@@ -277,7 +272,6 @@ namespace gr
           reader_state->gen2_logic_status = IDLE;
         }
         log.close();
-        time.close();
       }
 
       consume_each (consumed);

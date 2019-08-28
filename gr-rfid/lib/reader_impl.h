@@ -43,7 +43,7 @@ namespace gr
         void gen_query_adjust_bits();
         void crc_append(std::vector<float> & q);
 
-        std::ofstream log, time;
+        std::ofstream log;
         int calc_usec(const struct timeval start, const struct timeval end);
         void print_results();
 

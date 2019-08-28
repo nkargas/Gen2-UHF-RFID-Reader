@@ -93,7 +93,6 @@ namespace gr
 
       std::ofstream log;
       log.open(log_file_path, std::ios::app);
-      time.open("time.csv", std::ios::app);
 
 //      log<<std::endl<<ninput_items[0]<<std::endl;
 
@@ -214,10 +213,6 @@ namespace gr
               log<<avg_iq<<std::endl;
               reader_state->gate_status = GATE_CLOSED;
               number_samples_consumed = i-1;
-              struct timeval tv;
-              gettimeofday(&tv,NULL);
-              long long time_usec = tv.tv_sec *1000000 + tv.tv_usec - 1566000000000000;
-              time<<time_usec<<std::endl;
 
               break;
             }
@@ -227,7 +222,6 @@ namespace gr
       }
 
       log.close();
-      time.close();
       consume_each(number_samples_consumed);
       return written;
     }
@@ -261,9 +255,7 @@ namespace gr
         log << "├──────────────────────────────────────────────────" << std::endl;
         reader_state->gen2_logic_status = SEND_QUERY_REP;
       }
-      time<<0<<std::endl;
 
-      time.close();
       log.close();
     }
   }

@@ -35,7 +35,6 @@ namespace gr {
 
         enum SIGNAL_STATE {NEG_EDGE, POS_EDGE};
         IPC_controller_forRN16 ipc;
-        std::ofstream time;
 
         int n_samples, n_samples_T1, n_samples_TAG_BIT, n_samples_PW;
 
