@@ -54,7 +54,7 @@ namespace gr
     : gr::block("gate",
     gr::io_signature::make(1, 1, sizeof(gr_complex)),
     gr::io_signature::make(1, 1, sizeof(gr_complex))),
-    n_samples(0), avg_amp(0, 0), num_pulses(0)
+    n_samples(0), avg_zero(0, 0), avg_cw(0, 0), cw_count(0), num_pulses(0)
     {
       n_samples_T1 = T1_D * (sample_rate / pow(10,6));
       n_samples_TAG_BIT = TPRI_D * (sample_rate / pow(10,6));
@@ -82,8 +82,6 @@ namespace gr
       std::ofstream log;
       log.open(log_file_path, std::ios::app);
 
-//      log<<std::endl<<ninput_items[0]<<std::endl;
-
       number_samples_consumed = ninput_items[0];
       if(reader_state->gate_status != GATE_CLOSED)
       {
@@ -93,12 +91,12 @@ namespace gr
 
           if(reader_state->gate_status == GATE_START)
           {
-            if(++n_samples <= 20000) avg_amp += sample;
+            if(++n_samples <= 20000) avg_zero += sample;
             else
             {
-              avg_amp /= 20000;
+              avg_zero /= 20000;
               log << "n_samples_TAG_BIT= " << n_samples_TAG_BIT << std::endl;
-              log << "Average of first 20000 amplitudes= " << avg_amp << std::endl;
+              log << "Zero amplitude= " << avg_zero << std::endl;
 
               reader_state->gen2_logic_status = SEND_QUERY;
               reader_state->gate_status = GATE_CLOSED;
@@ -130,22 +128,17 @@ namespace gr
           {
             if(--max_count <= 0)
             {//log<<std::endl;
-              log<<"GATE TRACK"<<std::endl;
-              log<<"abs value : "<<abs(sample - avg_amp)<<std::endl;
-              if(signal_state == POS_EDGE) log<<"signal_state : POS_EDGE"<<std::endl;
-              else if(signal_state == NEG_EDGE)  log<<"signal_state : NEG_EDGE"<<std::endl;
-              log<<"num pulse : "<<num_pulses<<std::endl;
               gate_fail();
               number_samples_consumed = i-1;
               break;
             }//og<<sample<<" ";
             if(abs(sample) < AMP_LOWBOUND) continue;
 
-            if((signal_state == NEG_EDGE) && (abs(sample - avg_amp) > AMP_POS_THRESHOLD))
+            if((signal_state == NEG_EDGE) && (abs(sample - avg_zero) > AMP_POS_THRESHOLD))
             {
               signal_state = POS_EDGE;
             }
-            else if((signal_state == POS_EDGE) && (abs(sample - avg_amp) < AMP_NEG_THRESHOLD))
+            else if((signal_state == POS_EDGE) && (abs(sample - avg_zero) < AMP_NEG_THRESHOLD))
             {
               signal_state = NEG_EDGE;
               if(++num_pulses > MIN_PULSE)
@@ -167,26 +160,28 @@ namespace gr
               number_samples_consumed = i-1;
               break;
             }//log<<sample<<" ";
-//            if(abs(sample) < AMP_LOWBOUND) continue;
 
-            if(abs(sample - avg_amp) < AMP_NEG_THRESHOLD){
+            if(abs(sample - avg_zero) < AMP_NEG_THRESHOLD)
+            {
               n_samples = 0;
-              iq_count = 0;
-              avg_iq = gr_complex(0.0,0.0);
-            }else if(n_samples++ > T1_LEN)
+              avg_cw = gr_complex(0.0,0.0);
+              cw_count = 0;
+            }
+            else if(n_samples++ > T1_LEN)
             {//log<<std::endl;
               log << "│ Gate open!" << std::endl;
               log << "├──────────────────────────────────────────────────" << std::endl;
-              avg_iq /= (iq_count);
-
+              avg_cw /= cw_count;
 
               reader_state->gate_status = GATE_OPEN;
               n_samples = 0;
               number_samples_consumed = i-1;
               break;
-            }else if(n_samples > (n_samples_PW * 2)){
-              iq_count++;
-              avg_iq += in[i];
+            }
+            else if(n_samples > (n_samples_PW * 2))
+            {
+              avg_cw += sample;
+              cw_count++;
             }
           }
           else if(reader_state->gate_status == GATE_OPEN)
@@ -198,7 +193,7 @@ namespace gr
 
               break;
             }
-            out[written++] = in[i] - avg_iq;
+            out[written++] = sample - avg_cw;
           }
         }
       }

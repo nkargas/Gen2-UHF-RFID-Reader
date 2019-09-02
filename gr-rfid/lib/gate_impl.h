@@ -36,10 +36,10 @@ namespace gr {
 
         int n_samples, n_samples_T1, n_samples_TAG_BIT, n_samples_PW;
 
-        gr_complex avg_iq = gr_complex(0.0,0.0);
-        gr_complex avg_amp;
+        gr_complex avg_zero;
+        gr_complex avg_cw;
 
-        int iq_count = 0;
+        int cw_count;
         int max_count;
         int num_pulses;
 
