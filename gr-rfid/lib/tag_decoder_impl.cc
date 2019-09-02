@@ -192,8 +192,6 @@ namespace gr
 
       std::cout << "RN16 decoded | ";
       reader_state->gen2_logic_status = SEND_ACK;
-
-      goto_next_slot();
     }
 
 
