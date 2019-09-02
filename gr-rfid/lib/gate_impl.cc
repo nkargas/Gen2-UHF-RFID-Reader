@@ -119,7 +119,6 @@ namespace gr
             reader_state->gate_status = GATE_SEEK;
           }
 
-
           if(reader_state->gate_status == GATE_SEEK)
           {
             reader_state->gate_status = GATE_TRACK;

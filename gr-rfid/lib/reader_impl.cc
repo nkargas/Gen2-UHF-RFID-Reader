@@ -199,7 +199,7 @@ namespace gr
           log << "EPC= " << EPC_D / sample_d << std::endl << std::endl;
 
           transmit(out, &written, cw_ack);
-          out[written++] = 0;
+          //out[written++] = 0;
           reader_state->gen2_logic_status = IDLE;
         }
         else if(reader_state->gen2_logic_status == SEND_QUERY)
