@@ -102,7 +102,7 @@ class reader_top_block(gr.top_block):
       self.connect(self.to_complex, self.file_sink)
 
     else :  # Offline Data
-      self.file_source               = blocks.file_source(gr.sizeof_gr_complex*1, "../misc/data/source",False)   ## instead of uhd.usrp_source
+      self.file_source               = blocks.file_source(gr.sizeof_gr_complex*1, "../misc/data/file_source",False)   ## instead of uhd.usrp_source
       #self.file_sink                  = blocks.file_sink(gr.sizeof_gr_complex*1,   "../misc/data/file_sink", False)     ## instead of uhd.usrp_sink
 
       ######## Connections #########

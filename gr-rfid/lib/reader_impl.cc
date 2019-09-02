@@ -178,8 +178,6 @@ namespace gr
       int consumed = 0;
       int written = 0;
 
-      float tp[2]={1,0};
-
       if(reader_state->gen2_logic_status != IDLE)
       {
         log.open(log_file_path, std::ios::app);
@@ -219,8 +217,6 @@ namespace gr
           transmit(out, &written, preamble);
           gen_query_bits();
           transmit_bits(out, &written, query_bits);
-
-
           transmit(out, &written, cw_query);
 
           log << "│ Send Query | Q= " << FIXED_Q << std::endl;
@@ -242,10 +238,10 @@ namespace gr
           for(int i=0 ; i<100 ; i++) out[written++] = 1;
           transmit(out, &written, query_rep);
           transmit(out, &written, cw_query);
+
           log << "│ Send QueryRep" << std::endl;
           log << "├──────────────────────────────────────────────────" << std::endl;
           std::cout << "QueryRep | ";
-
 
           reader_state->gen2_logic_status = IDLE;
         }

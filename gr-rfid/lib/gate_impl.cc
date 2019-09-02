@@ -54,42 +54,30 @@ namespace gr
     : gr::block("gate",
     gr::io_signature::make(1, 1, sizeof(gr_complex)),
     gr::io_signature::make(1, 1, sizeof(gr_complex))),
-    n_samples(0), avg_amp(0,0), num_pulses(0)
+    n_samples(0), avg_amp(0, 0), num_pulses(0)
     {
-      n_samples_T1       = T1_D       * (sample_rate / pow(10,6));
-      n_samples_TAG_BIT  = TPRI_D  * (sample_rate / pow(10,6));
-      n_samples_PW       = PW_D  * (sample_rate / pow(10,6));
+      n_samples_T1 = T1_D * (sample_rate / pow(10,6));
+      n_samples_TAG_BIT = TPRI_D * (sample_rate / pow(10,6));
+      n_samples_PW = PW_D * (sample_rate / pow(10,6));
 
       // First block to be scheduled
       initialize_reader_state();
     }
 
-    /*
-    * Our virtual destructor.
-    */
-    gate_impl::~gate_impl()
-    {
-    }
+    gate_impl::~gate_impl(){}
 
-    void
-    gate_impl::forecast (int noutput_items, gr_vector_int &ninput_items_required)
+    void gate_impl::forecast (int noutput_items, gr_vector_int &ninput_items_required)
     {
       ninput_items_required[0] = noutput_items;
     }
 
-    int
-    gate_impl::general_work (int noutput_items,
-      gr_vector_int &ninput_items,
-      gr_vector_const_void_star &input_items,
-      gr_vector_void_star &output_items)
+    int gate_impl::general_work (int noutput_items, gr_vector_int &ninput_items, gr_vector_const_void_star &input_items, gr_vector_void_star &output_items)
     {
       const gr_complex *in = (const gr_complex *) input_items[0];
       gr_complex *out = (gr_complex *) output_items[0];
 
-
       int number_samples_consumed = 0;
       int written = 0;
-
 
       std::ofstream log;
       log.open(log_file_path, std::ios::app);
@@ -182,7 +170,7 @@ namespace gr
             }//log<<sample<<" ";
 //            if(abs(sample) < AMP_LOWBOUND) continue;
 
-            if(abs(sample - avg_amp) < AMP_NEG_THRESHOLD){ 
+            if(abs(sample - avg_amp) < AMP_NEG_THRESHOLD){
               n_samples = 0;
               iq_count = 0;
               avg_iq = gr_complex(0.0,0.0);
