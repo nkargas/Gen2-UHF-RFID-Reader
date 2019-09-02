@@ -219,6 +219,8 @@ namespace gr
           transmit(out, &written, preamble);
           gen_query_bits();
           transmit_bits(out, &written, query_bits);
+
+
           transmit(out, &written, cw_query);
 
           log << "│ Send Query | Q= " << FIXED_Q << std::endl;
@@ -240,10 +242,10 @@ namespace gr
           for(int i=0 ; i<100 ; i++) out[written++] = 1;
           transmit(out, &written, query_rep);
           transmit(out, &written, cw_query);
-
           log << "│ Send QueryRep" << std::endl;
           log << "├──────────────────────────────────────────────────" << std::endl;
           std::cout << "QueryRep | ";
+
 
           reader_state->gen2_logic_status = IDLE;
         }
@@ -383,7 +385,7 @@ namespace gr
         memcpy(crc, tmp, 5*sizeof(float));
       }
       for (int i = 4; i >= 0; i--)
-      q.push_back(crc[i]);
+        q.push_back(crc[i]);
     }
   }
 }

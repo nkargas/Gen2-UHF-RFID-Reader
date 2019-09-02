@@ -28,8 +28,8 @@
 #include <stdio.h>
 
 #define AMP_LOWBOUND 0.001
-#define AMP_POS_THRESHOLD 0.005
-#define AMP_NEG_THRESHOLD 0.05
+#define AMP_POS_THRESHOLD 0.01
+#define AMP_NEG_THRESHOLD 0.001
 #define MIN_PULSE 5
 #define T1_LEN 400
 
@@ -54,10 +54,11 @@ namespace gr
     : gr::block("gate",
     gr::io_signature::make(1, 1, sizeof(gr_complex)),
     gr::io_signature::make(1, 1, sizeof(gr_complex))),
-    n_samples(0), avg_amp(0), num_pulses(0)
+    n_samples(0), avg_amp(0,0), num_pulses(0)
     {
       n_samples_T1       = T1_D       * (sample_rate / pow(10,6));
       n_samples_TAG_BIT  = TPRI_D  * (sample_rate / pow(10,6));
+      n_samples_PW       = PW_D  * (sample_rate / pow(10,6));
 
       // First block to be scheduled
       initialize_reader_state();
@@ -85,26 +86,31 @@ namespace gr
       const gr_complex *in = (const gr_complex *) input_items[0];
       gr_complex *out = (gr_complex *) output_items[0];
 
+
       int number_samples_consumed = 0;
       int written = 0;
 
+
       std::ofstream log;
       log.open(log_file_path, std::ios::app);
+
+//      log<<std::endl<<ninput_items[0]<<std::endl;
 
       number_samples_consumed = ninput_items[0];
       if(reader_state->gate_status != GATE_CLOSED)
       {
         for(int i=0 ; i<ninput_items[0] ; i++)
         {
-          float sample = std::abs(in[i]);
+          gr_complex sample = in[i];
 
           if(reader_state->gate_status == GATE_START)
           {
-            if(++n_samples <= 28000) avg_amp = (avg_amp + sample) / 2;
+            if(++n_samples <= 20000) avg_amp += sample;
             else
             {
+              avg_amp /= 20000;
               log << "n_samples_TAG_BIT= " << n_samples_TAG_BIT << std::endl;
-              log << "Average of first 28000 amplitudes= " << avg_amp << std::endl;
+              log << "Average of first 20000 amplitudes= " << avg_amp << std::endl;
 
               reader_state->gen2_logic_status = SEND_QUERY;
               reader_state->gate_status = GATE_CLOSED;
@@ -124,6 +130,8 @@ namespace gr
             reader_state->n_samples_to_ungate = (EPC_BITS + TAG_PREAMBLE_BITS + EXTRA_BITS) * n_samples_TAG_BIT;
             reader_state->gate_status = GATE_SEEK;
           }
+
+
           if(reader_state->gate_status == GATE_SEEK)
           {
             reader_state->gate_status = GATE_TRACK;
@@ -135,17 +143,22 @@ namespace gr
           {
             if(--max_count <= 0)
             {//log<<std::endl;
+              log<<"GATE TRACK"<<std::endl;
+              log<<"abs value : "<<abs(sample - avg_amp)<<std::endl;
+              if(signal_state == POS_EDGE) log<<"signal_state : POS_EDGE"<<std::endl;
+              else if(signal_state == NEG_EDGE)  log<<"signal_state : NEG_EDGE"<<std::endl;
+              log<<"num pulse : "<<num_pulses<<std::endl;
               gate_fail();
               number_samples_consumed = i-1;
               break;
             }//og<<sample<<" ";
-            if(sample < AMP_LOWBOUND) continue;
+            if(abs(sample) < AMP_LOWBOUND) continue;
 
-            if(signal_state == NEG_EDGE && sample - avg_amp > AMP_POS_THRESHOLD)
+            if((signal_state == NEG_EDGE) && (abs(sample - avg_amp) > AMP_POS_THRESHOLD))
             {
               signal_state = POS_EDGE;
             }
-            else if(signal_state == POS_EDGE && avg_amp - sample > AMP_NEG_THRESHOLD)
+            else if((signal_state == POS_EDGE) && (abs(sample - avg_amp) < AMP_NEG_THRESHOLD))
             {
               signal_state = NEG_EDGE;
               if(++num_pulses > MIN_PULSE)
@@ -162,21 +175,31 @@ namespace gr
           {
             if(--max_count <= 0)
             {//log<<std::endl;
+              log<<"GATE READY"<<std::endl;
               gate_fail();
               number_samples_consumed = i-1;
               break;
             }//log<<sample<<" ";
-            if(sample < AMP_LOWBOUND) continue;
+//            if(abs(sample) < AMP_LOWBOUND) continue;
 
-            if(avg_amp - sample > AMP_NEG_THRESHOLD) n_samples = 0;
-            else if(n_samples++ > T1_LEN)
+            if(abs(sample - avg_amp) < AMP_NEG_THRESHOLD){ 
+              n_samples = 0;
+              iq_count = 0;
+              avg_iq = gr_complex(0.0,0.0);
+            }else if(n_samples++ > T1_LEN)
             {//log<<std::endl;
               log << "│ Gate open!" << std::endl;
               log << "├──────────────────────────────────────────────────" << std::endl;
+              avg_iq /= (iq_count);
+
+
               reader_state->gate_status = GATE_OPEN;
               n_samples = 0;
               number_samples_consumed = i-1;
               break;
+            }else if(n_samples > (n_samples_PW * 2)){
+              iq_count++;
+              avg_iq += in[i];
             }
           }
           else if(reader_state->gate_status == GATE_OPEN)
@@ -185,9 +208,10 @@ namespace gr
             {
               reader_state->gate_status = GATE_CLOSED;
               number_samples_consumed = i-1;
+
               break;
             }
-            out[written++] = in[i];
+            out[written++] = in[i] - avg_iq;
           }
         }
       }

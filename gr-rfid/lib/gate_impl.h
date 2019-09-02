@@ -24,6 +24,7 @@
 #include <rfid/gate.h>
 #include <vector>
 #include "rfid/global_vars.h"
+#include <fstream>
 
 namespace gr {
   namespace rfid {
@@ -33,12 +34,14 @@ namespace gr {
 
         enum SIGNAL_STATE {NEG_EDGE, POS_EDGE};
 
-        int n_samples, n_samples_T1, n_samples_TAG_BIT;
+        int n_samples, n_samples_T1, n_samples_TAG_BIT, n_samples_PW;
 
-        double avg_amp;
+        gr_complex avg_iq = gr_complex(0.0,0.0);
+        gr_complex avg_amp;
+
+        int iq_count = 0;
         int max_count;
         int num_pulses;
-
 
         SIGNAL_STATE signal_state;
 

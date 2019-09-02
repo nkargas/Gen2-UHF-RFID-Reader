@@ -56,14 +56,14 @@ class reader_top_block(gr.top_block):
     self.ampl     = 0.55                  # Output signal amplitude (signal power vary for different RFX900 cards)
     self.freq     = 910e6                # Modulation frequency (can be set between 902-920)
     self.rx_gain   = 0                   # RX Gain (gain at receiver)
-    self.tx_gain   = 20                    # RFX900 no Tx gain option
+    self.tx_gain   = 20                 # RFX900 no Tx gain option
 
     self.usrp_address_source = "addr=192.168.255.3,recv_frame_size=256"
     self.usrp_address_sink   = "addr=192.168.255.3,recv_frame_size=256"
 
     # Each FM0 symbol consists of ADC_RATE/BLF samples (2e6/40e3 = 50 samples)
     # 10 samples per symbol after matched filtering and decimation
-    self.num_taps     = [1] * 1 # matched to half symbol period
+    self.num_taps     = [1] * 1#25 # matched to half symbol period
 
     ######## File sinks for debugging (1 for each block) #########
     self.file_sink_source         = blocks.file_sink(gr.sizeof_gr_complex*1, "../misc/data/source", False)
@@ -102,7 +102,7 @@ class reader_top_block(gr.top_block):
       self.connect(self.to_complex, self.file_sink)
 
     else :  # Offline Data
-      self.file_source               = blocks.file_source(gr.sizeof_gr_complex*1, "../misc/data/file_source",False)   ## instead of uhd.usrp_source
+      self.file_source               = blocks.file_source(gr.sizeof_gr_complex*1, "../misc/data/source",False)   ## instead of uhd.usrp_source
       #self.file_sink                  = blocks.file_sink(gr.sizeof_gr_complex*1,   "../misc/data/file_sink", False)     ## instead of uhd.usrp_sink
 
       ######## Connections #########
