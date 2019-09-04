@@ -31,6 +31,7 @@
 //#define DEBUG_TAG_DECODER_IMPL_INPUT
 //#define DEBUG_TAG_DECODER_IMPL_PREAMBLE
 //#define DEBUG_TAG_DECODER_IMPL_SAMPLE
+//define __DEBUG_LOG__
 
 namespace gr
 {
@@ -51,6 +52,7 @@ namespace gr
             std::vector<float> _norm_in;
 
             float _corr;
+            gr_complex _complex_corr;
 
           public:
             sample_information();
@@ -58,12 +60,14 @@ namespace gr
             ~sample_information();
 
             void set_corr(float);
+            void set_complex_corr(gr_complex);
 
             gr_complex in(int);
             int total_size(void);
             float norm_in(int);
 
             float corr(void);
+            gr_complex complex_corr(void);
         };
 
         // tag_decoder_impl.cc
@@ -76,21 +80,23 @@ namespace gr
         int tag_sync(sample_information*, int);
         std::vector<float> tag_detection(sample_information*, int, int);
         int determine_first_mask_level(sample_information*, int);
-        int decode_single_bit(sample_information* in, int, int);
+        int decode_single_bit(sample_information* in, int, int, int);
 
         // debug_message
         std::string current_round_slot;
+#ifdef __DEBUG_LOG__
         std::ofstream log;
         std::ofstream debug_log;
-        #ifdef DEBUG_TAG_DECODER_IMPL_INPUT
+#endif
+#ifdef DEBUG_TAG_DECODER_IMPL_INPUT
         void debug_input(sample_information*, int, std::string);
-        #endif
-        #ifdef DEBUG_TAG_DECODER_IMPL_PREAMBLE
+#endif
+#ifdef DEBUG_TAG_DECODER_IMPL_PREAMBLE
         void debug_preamble(sample_information*, int, std::string, int);
-        #endif
-        #ifdef DEBUG_TAG_DECODER_IMPL_SAMPLE
+#endif
+#ifdef DEBUG_TAG_DECODER_IMPL_SAMPLE
         void debug_sample(sample_information*, int, std::string, int);
-        #endif
+#endif
 
       public:
         tag_decoder_impl(int, std::vector<int>);

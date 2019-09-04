@@ -22,6 +22,7 @@
 #include "config.h"
 #endif
 
+
 #include <gnuradio/io_signature.h>
 #include <gnuradio/prefs.h>
 #include <gnuradio/math.h>
@@ -34,28 +35,41 @@ namespace gr
   namespace rfid
   {
     tag_decoder::sptr
-    tag_decoder::make(int sample_rate)
-    {
-      std::vector<int> output_sizes;
-      output_sizes.push_back(sizeof(float));
-      output_sizes.push_back(sizeof(gr_complex));
+      tag_decoder::make(int sample_rate)
+      {
+        std::vector<int> output_sizes;
+        output_sizes.push_back(sizeof(float));
+        output_sizes.push_back(sizeof(gr_complex));
 
-      return gnuradio::get_initial_sptr(new tag_decoder_impl(sample_rate,output_sizes));
-    }
+        return gnuradio::get_initial_sptr(new tag_decoder_impl(sample_rate,output_sizes));
+      }
+
+
+
 
     tag_decoder_impl::tag_decoder_impl(int sample_rate, std::vector<int> output_sizes)
-    : gr::block("tag_decoder", gr::io_signature::make(1, 1, sizeof(gr_complex)), gr::io_signature::makev(2, 2, output_sizes)), s_rate(sample_rate)
+      : gr::block("tag_decoder", gr::io_signature::make(1, 1, sizeof(gr_complex)), gr::io_signature::makev(2, 2, output_sizes)), s_rate(sample_rate)
     {
       char_bits = new char[128];
       n_samples_TAG_BIT = TPRI_D * s_rate / pow(10,6);
     }
 
+
+
+
     tag_decoder_impl::~tag_decoder_impl(){}
+
+
+
 
     void tag_decoder_impl::forecast(int noutput_items, gr_vector_int& ninput_items_required)
     {
       ninput_items_required[0] = noutput_items;
     }
+
+
+
+
 
     int tag_decoder_impl::general_work(int noutput_items, gr_vector_int& ninput_items, gr_vector_const_void_star& input_items, gr_vector_void_star& output_items)
     {
@@ -72,6 +86,8 @@ namespace gr
         current_round_slot = (std::to_string(reader_state->reader_stats.cur_inventory_round)+"_"+std::to_string(reader_state->reader_stats.cur_slot_number)).c_str();
         sample_information ys ((gr_complex*)input_items[0], ninput_items[0]);
 
+#ifdef __DEBUG_LOG__
+
         log.open(log_file_path, std::ios::app);
         debug_log.open((debug_folder_path+"log/"+current_round_slot).c_str(), std::ios::app);
 
@@ -81,10 +97,11 @@ namespace gr
         else if(mode == 2) debug_log << "##### DECODER_DECODE_EPC #####" << std::endl;
         debug_log << "n_samples_to_ungate= " << reader_state->n_samples_to_ungate << std::endl;
         debug_log << "ninput_items[0]= " << ninput_items[0] << std::endl;
+#endif
 
-        #ifdef DEBUG_TAG_DECODER_IMPL_INPUT
+#ifdef DEBUG_TAG_DECODER_IMPL_INPUT
         debug_input(&ys, mode, current_round_slot);
-        #endif
+#endif
 
         // detect preamble
         int index;
@@ -93,27 +110,36 @@ namespace gr
 
         if(index == -1)
         {
+#ifdef __DEBUG_LOG__
           log << "│ Preamble detection fail.." << std::endl;
           debug_log << "Preamble detection fail" << std::endl << std::endl;
+#endif
           std::cout << "\t\t\t\t\tPreamble FAIL!!";
           goto_next_slot();
         }
         else
         {
+#ifdef __DEBUG_LOG__
           log << "│ Preamble detected!" << std::endl;
-          #ifdef DEBUG_TAG_DECODER_IMPL_PREAMBLE
+#endif
+
+
+#ifdef DEBUG_TAG_DECODER_IMPL_PREAMBLE
           debug_preamble(&ys, mode, current_round_slot, index);
-          #endif
-          #ifdef DEBUG_TAG_DECODER_IMPL_SAMPLE
+#endif
+
+#ifdef DEBUG_TAG_DECODER_IMPL_SAMPLE
           debug_sample(&ys, mode, current_round_slot, index);
-          #endif
+#endif
 
           if(mode == 1) decode_RN16(&ys, index, out);
           else if(mode == 2) decode_EPC(&ys, index);
         }
 
+#ifdef __DEBUG_LOG__
         log.close();
         debug_log.close();
+#endif
 
         // process for GNU RADIO
         produce(1, ninput_items[0]);
@@ -124,18 +150,24 @@ namespace gr
       return WORK_CALLED_PRODUCE;
     }
 
+
+
     void tag_decoder_impl::decode_RN16(sample_information* ys, int index, float* out)
     {
       std::vector<float> RN16_bits = tag_detection(ys, index, RN16_BITS-1);  // RN16_BITS includes one dummy bit
 
+
+#ifdef __DEBUG_LOG__
       // write RN16_bits to the next block
       log << "│ RN16=";
       debug_log << "RN16= ";
+#endif
       int written = 0;
       for(int i=0 ; i<RN16_bits.size() ; i++)
       {
         out[written++] = RN16_bits[i];
 
+#ifdef __DEBUG_LOG__
         if(i % 4 == 0)
         {
           log << " ";
@@ -143,25 +175,45 @@ namespace gr
         }
         log << RN16_bits[i];
         debug_log << RN16_bits[i];
+
+#endif
+
       }
+#ifdef __DEBUG_LOG__
       debug_log << std::endl << std::endl;
+#endif
+
       produce(0, written);
 
       // go to the next state
+#ifdef __DEBUG_LOG__
       log << std::endl << "├──────────────────────────────────────────────────" << std::endl;
+#endif
+
       std::cout << "RN16 decoded | ";
       reader_state->gen2_logic_status = SEND_ACK;
+      
     }
+
+
 
     void tag_decoder_impl::decode_EPC(sample_information* ys, int index)
     {
       std::vector<float> EPC_bits = tag_detection(ys, index, EPC_BITS-1);  // EPC_BITS includes one dummy bit
 
       // convert EPC_bits from float to char in order to use Buettner's function
+     
+#ifdef __DEBUG_LOG__
+     
       log << "│ EPC=";
       debug_log << "EPC=";
+
+#endif
+
       for(int i=0 ; i<EPC_bits.size() ; i++)
       {
+        char_bits[i] = EPC_bits[i] + '0';
+#ifdef __DEBUG_LOG__
         if(i % 4 == 0)
         {
           log << " ";
@@ -169,12 +221,12 @@ namespace gr
         }
         log << EPC_bits[i];
         debug_log << EPC_bits[i];
-        char_bits[i] = EPC_bits[i] + '0';
         if(i % 16 == 15)
         {
           log << std::endl << "│     ";
           debug_log << std::endl << "    ";
         }
+#endif
       }
 
       // check CRC
@@ -185,8 +237,10 @@ namespace gr
         for(int i=0 ; i<8 ; i++)
           tag_id += std::pow(2, 7-i) * EPC_bits[104+i];
 
+#ifdef __DEBUG_LOG__
         log << " CRC check success! Tag ID= " << tag_id << std::endl;
         debug_log << " Tag ID= " << tag_id << std::endl << std::endl;
+#endif
         std::cout << "\t\t\t\t\t\t\t\t\t\tTag ID= " << tag_id;
         reader_state->reader_stats.n_epc_correct+=1;
 
@@ -199,8 +253,10 @@ namespace gr
       }
       else
       {
+#ifdef __DEBUG_LOG__
         log << " CRC check fail.." << std::endl;
         debug_log << "CRC check fail" << std::endl << std::endl;
+#endif
         std::cout << "\t\t\t\t\tCRC FAIL!!";
       }
 
@@ -215,7 +271,9 @@ namespace gr
         reader_state->reader_stats.cur_inventory_round ++;
         reader_state->reader_stats.cur_slot_number = 1;
 
+#ifdef  __DEBUG_LOG__
         log << "└──────────────────────────────────────────────────" << std::endl;
+#endif
         if(reader_state->reader_stats.cur_inventory_round > MAX_NUM_QUERIES)
         {
           reader_state->reader_stats.cur_inventory_round--;
@@ -225,12 +283,14 @@ namespace gr
       }
       else
       {
+#ifdef __DEBUG_LOG__
         log << "├──────────────────────────────────────────────────" << std::endl;
+#endif
         reader_state->gen2_logic_status = SEND_QUERY_REP;
       }
     }
 
-    #ifdef DEBUG_TAG_DECODER_IMPL_INPUT
+#ifdef DEBUG_TAG_DECODER_IMPL_INPUT
     void tag_decoder_impl::debug_input(sample_information* ys, int mode, std::string current_round_slot)
     {
       std::string path;
@@ -253,9 +313,9 @@ namespace gr
       debug_q.close();
       debug.close();
     }
-    #endif
+#endif
 
-    #ifdef DEBUG_TAG_DECODER_IMPL_PREAMBLE
+#ifdef DEBUG_TAG_DECODER_IMPL_PREAMBLE
     void tag_decoder_impl::debug_preamble(sample_information* ys, int mode, std::string current_round_slot, int index)
     {
       std::string path;
@@ -278,9 +338,9 @@ namespace gr
       debug_q.close();
       debug.close();
     }
-    #endif
+#endif
 
-    #ifdef DEBUG_TAG_DECODER_IMPL_SAMPLE
+#ifdef DEBUG_TAG_DECODER_IMPL_SAMPLE
     void tag_decoder_impl::debug_sample(sample_information* ys, int mode, std::string current_round_slot, int index)
     {
       std::string path;
@@ -303,7 +363,7 @@ namespace gr
       debug_q.close();
       debug.close();
     }
-    #endif
+#endif
 
     /* Function adapted from https://www.cgran.org/wiki/Gen2 */
     int tag_decoder_impl::check_crc(char * bits, int num_bits)
@@ -341,15 +401,15 @@ namespace gr
             crc_16 ^= 0x1021;
           }
           else
-          crc_16 <<= 1;
+            crc_16 <<= 1;
         }
       }
       crc_16 = ~crc_16;
 
       if(rcvd_crc != crc_16)
-      return -1;
+        return -1;
       else
-      return 1;
+        return 1;
     }
   }
 }

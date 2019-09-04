@@ -201,7 +201,6 @@ namespace gr
           log << "EPC= " << EPC_D / sample_d << std::endl << std::endl;
 
           transmit(out, &written, cw_ack);
-          out[written++] = 0;
           reader_state->gen2_logic_status = IDLE;
         }
         else if(reader_state->gen2_logic_status == SEND_QUERY)
@@ -215,7 +214,7 @@ namespace gr
           reader_state->decoder_status = DECODER_DECODE_RN16;
           reader_state->gate_status    = GATE_SEEK_RN16;
 
-          for(int i=0 ; i<100 ; i++) out[written++] = 1;
+          transmit(out, &written, cw);
           transmit(out, &written, preamble);
           gen_query_bits();
           transmit_bits(out, &written, query_bits);
@@ -237,13 +236,13 @@ namespace gr
           reader_state->decoder_status = DECODER_DECODE_RN16;
           reader_state->gate_status    = GATE_SEEK_RN16;
 
-          for(int i=0 ; i<100 ; i++) out[written++] = 1;
+          transmit(out, &written, cw);
           transmit(out, &written, query_rep);
           transmit(out, &written, cw_query);
-
           log << "│ Send QueryRep" << std::endl;
           log << "├──────────────────────────────────────────────────" << std::endl;
           std::cout << "QueryRep | ";
+
 
           reader_state->gen2_logic_status = IDLE;
         }
@@ -255,7 +254,7 @@ namespace gr
           reader_state->decoder_status = DECODER_DECODE_EPC;
           reader_state->gate_status    = GATE_SEEK_EPC;
 
-          for(int i=0 ; i<100 ; i++) out[written++] = 1;
+          transmit(out, &written, cw);
           transmit(out, &written, frame_sync);
           gen_ack_bits(in);
           transmit_bits(out, &written, ack_bits);
@@ -383,7 +382,7 @@ namespace gr
         memcpy(crc, tmp, 5*sizeof(float));
       }
       for (int i = 4; i >= 0; i--)
-      q.push_back(crc[i]);
+        q.push_back(crc[i]);
     }
   }
 }
