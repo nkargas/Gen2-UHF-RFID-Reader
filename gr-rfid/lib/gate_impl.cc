@@ -27,6 +27,7 @@
 #include <sys/time.h>
 #include <stdio.h>
 
+
 #define AMP_LOWBOUND (0.01) //this will let us find the lowest bound
 #define MIN_PULSE (5)
 #define T1_LEN (400)
@@ -57,6 +58,7 @@ namespace gr
     : gr::block("gate",
     gr::io_signature::make(1, 1, sizeof(gr_complex)),
     gr::io_signature::make(1, 1, sizeof(gr_complex))),
+
     n_samples(0), avg_dc(0,0), num_pulses(0)
     {
       n_samples_T1       = T1_D       * (sample_rate / pow(10,6));
@@ -68,24 +70,14 @@ namespace gr
 
     }
 
-    /*
-    * Our virtual destructor.
-    */
-    gate_impl::~gate_impl()
-    {
-    }
+    gate_impl::~gate_impl(){}
 
-    void
-    gate_impl::forecast (int noutput_items, gr_vector_int &ninput_items_required)
+    void gate_impl::forecast (int noutput_items, gr_vector_int &ninput_items_required)
     {
       ninput_items_required[0] = noutput_items;
     }
 
-    int
-    gate_impl::general_work (int noutput_items,
-      gr_vector_int &ninput_items,
-      gr_vector_const_void_star &input_items,
-      gr_vector_void_star &output_items)
+    int gate_impl::general_work (int noutput_items, gr_vector_int &ninput_items, gr_vector_const_void_star &input_items, gr_vector_void_star &output_items)
     {
       const gr_complex *in = (const gr_complex *) input_items[0];
       gr_complex *out = (gr_complex *) output_items[0];
@@ -102,10 +94,7 @@ namespace gr
       {
         for(int i=0 ; i<ninput_items[0] ; i++)
         {
-          gr_complex sample = in[i];
-          char data[8];
-          memcpy(data, &sample, 8);
-          
+          gr_complex sample = in[i];          
 
           if(reader_state->gate_status == GATE_START)
           {
@@ -213,6 +202,7 @@ namespace gr
               signal_state = POS_EDGE;
             }
             else if((signal_state == POS_EDGE) && (abs(sample) < amp_neg_threshold))
+
             {
               signal_state = NEG_EDGE;
               if(++num_pulses > MIN_PULSE)
@@ -235,6 +225,7 @@ namespace gr
               break;
             }//log<<sample<<" ";
 
+
             if(abs(sample) < amp_neg_threshold){ 
               n_samples = 0;
             }else if(n_samples++ > T1_LEN)
@@ -256,6 +247,7 @@ namespace gr
 
               break;
             }
+
             out[written++] = sample - avg_iq;
           }
         }

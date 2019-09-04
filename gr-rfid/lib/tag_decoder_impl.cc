@@ -202,7 +202,7 @@ namespace gr
       std::vector<float> EPC_bits = tag_detection(ys, index, EPC_BITS-1);  // EPC_BITS includes one dummy bit
 
       // convert EPC_bits from float to char in order to use Buettner's function
-     
+
 #ifdef __DEBUG_LOG__
      
       log << "│ EPC=";
