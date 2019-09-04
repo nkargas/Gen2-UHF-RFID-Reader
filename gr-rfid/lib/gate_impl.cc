@@ -90,7 +90,6 @@ namespace gr
       const gr_complex *in = (const gr_complex *) input_items[0];
       gr_complex *out = (gr_complex *) output_items[0];
 
-      gateOpenTracker.open("gateOpenTracker/"+std::to_string(gateTrackerCount), std::ofstream::app|std::ofstream::binary);
 
 
       int number_samples_consumed = ninput_items[0];
@@ -106,7 +105,6 @@ namespace gr
           gr_complex sample = in[i];
           char data[8];
           memcpy(data, &sample, 8);
-          gateOpenTracker.write(data,8);
           
 
           if(reader_state->gate_status == GATE_START)
@@ -133,7 +131,6 @@ namespace gr
               amp_neg_threshold = 0;
               max_count = MAX_SEARCH_SEEK;
 
-              gateTrackerCount++;
               break;
             }
           }
@@ -255,7 +252,6 @@ namespace gr
             if(++n_samples > reader_state->n_samples_to_ungate)
             {
               reader_state->gate_status = GATE_CLOSED;
-              gateTrackerCount++;
               number_samples_consumed = i-1;
 
               break;
@@ -266,7 +262,6 @@ namespace gr
       }
 
       log.close();
-      gateOpenTracker.close();
 
       consume_each(number_samples_consumed);
       return written;
@@ -275,7 +270,6 @@ namespace gr
     void gate_impl::gate_fail(void)
     {
       log.open(log_file_path, std::ios::app);
-      gateTrackerCount++;
 
       log << "│ Gate search FAIL!" << std::endl;
       std::cout << "Gate FAIL!!";

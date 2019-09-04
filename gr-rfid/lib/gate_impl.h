@@ -48,8 +48,7 @@ namespace gr {
 
         SIGNAL_STATE signal_state;
 
-        std::ofstream log, gateOpenTracker;
-        int gateTrackerCount = 0;
+        std::ofstream log;
        public:
         gate_impl(int sample_rate);
         ~gate_impl();
