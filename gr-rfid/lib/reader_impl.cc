@@ -180,32 +180,17 @@ namespace gr
 
       if(reader_state->gen2_logic_status != IDLE)
       {
-        log.open(log_file_path, std::ios::app);
+        reader_log ys();
 
         if(reader_state->gen2_logic_status == START)
         {
-          log << "preamble= " << n_delim_s + n_data0_s + n_data0_s + n_data1_s + n_trcal_s << std::endl;
-          log << "frame_sync= " << n_delim_s + n_data0_s + n_data0_s + n_data1_s << std::endl;
-          log << "delim= " << n_delim_s << std::endl;
-          log << "data_0= " << n_data0_s << std::endl;
-          log << "rtcal= " << n_data0_s + n_data1_s << std::endl;
-          log << "trcal= " << n_trcal_s << std::endl << std::endl;
-
-          log << "cw_query= " << n_cwquery_s << std::endl;
-          log << "cw_ack= " << n_cwack_s << std::endl;
-          log << "T1= " << T1_D / sample_d << std::endl;
-          log << "T2= " << T2_D / sample_d << std::endl;
-          log << "RN16= " << RN16_D / sample_d << std::endl;
-          log << "EPC= " << EPC_D / sample_d << std::endl << std::endl;
-
           transmit(out, &written, cw_ack);
-
           reader_state->gen2_logic_status = IDLE;
+          ys->makeLog_init(n_delim_s, n_data0_s, n_data1_s, n_trcal_s, n_cwquery_s, n_cwack_s, sample_d);
         }
         else if(reader_state->gen2_logic_status == SEND_QUERY)
         {
-          log << std::endl << "┌──────────────────────────────────────────────────" << std::endl;
-          log << "│ Inventory Round: " << reader_state->reader_stats.cur_inventory_round << " | Slot Number: " << reader_state->reader_stats.cur_slot_number << std::endl;
+          ys->makeLog_query(true);
           std::cout << std::endl << "[" << reader_state->reader_stats.cur_inventory_round << "_" << reader_state->reader_stats.cur_slot_number << "] ";
           reader_state->reader_stats.n_queries_sent +=1;
 
@@ -219,15 +204,12 @@ namespace gr
           transmit_bits(out, &written, query_bits);
           transmit(out, &written, cw_query);
 
-          log << "│ Send Query | Q= " << FIXED_Q << std::endl;
-          log << "├──────────────────────────────────────────────────" << std::endl;
           std::cout << "Query(Q=" << FIXED_Q << ") | ";
-
           reader_state->gen2_logic_status = IDLE;
         }
         else if(reader_state->gen2_logic_status == SEND_QUERY_REP)
         {
-          log << "│ Inventory Round: " << reader_state->reader_stats.cur_inventory_round << " | Slot Number: " << reader_state->reader_stats.cur_slot_number << std::endl;
+          ys->makeLog_query(false);
           std::cout << std::endl << "[" << reader_state->reader_stats.cur_inventory_round << "_" << reader_state->reader_stats.cur_slot_number << "] ";
           reader_state->reader_stats.n_queries_sent +=1;
 
@@ -238,15 +220,13 @@ namespace gr
           transmit(out, &written, cw);
           transmit(out, &written, query_rep);
           transmit(out, &written, cw_query);
-          log << "│ Send QueryRep" << std::endl;
-          log << "├──────────────────────────────────────────────────" << std::endl;
+
           std::cout << "QueryRep | ";
-
-
           reader_state->gen2_logic_status = IDLE;
         }
         else if(reader_state->gen2_logic_status == SEND_ACK && ninput_items[0] == RN16_BITS - 1)
         {
+          ys->makeLog_ack();
           reader_state->reader_stats.n_ack_sent +=1;
 
           // Controls the other two blocks
@@ -260,17 +240,14 @@ namespace gr
           transmit(out, &written, cw_ack);
 
           reader_state->reader_stats.ack_sent.push_back((std::to_string(reader_state->reader_stats.cur_inventory_round)+"_"+std::to_string(reader_state->reader_stats.cur_slot_number)).c_str());
-          log << "│ Send ACK" << std::endl;
-          log << "├──────────────────────────────────────────────────" << std::endl;
           std::cout << "ACK | ";
 
           consumed = ninput_items[0];
           reader_state->gen2_logic_status = IDLE;
         }
-        log.close();
       }
 
-      consume_each (consumed);
+      consume_each(consumed);
       return written;
     }
 

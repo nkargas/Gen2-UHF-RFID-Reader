@@ -110,8 +110,8 @@ namespace gr {
     // Number of bits
     const int PILOT_TONE          = 12;  // Optional
     const int TAG_PREAMBLE_BITS  = 6;   // Number of preamble bits
-    const int RN16_BITS          = 17;  // Dummy bit at the end
-    const int EPC_BITS            = 129;  // PC + EPC + CRC16 + Dummy = 6 + 16 + 96 + 16 + 1 = 135
+    const int RN16_BITS          = 16;
+    const int EPC_BITS            = 128;
     const int QUERY_LENGTH        = 22;  // Query length in bits
     const int EXTRA_BITS          = 12; // extra bits to ungate
 
@@ -163,6 +163,8 @@ namespace gr {
     const std::string log_file_path = "log";
     const std::string result_file_path = "result";
     const std::string debug_folder_path = "debug_data/";
+    const bool make_log = true;
+    const bool make_detailed_log = true;
   } // namespace rfid
 } // namespace gr
 

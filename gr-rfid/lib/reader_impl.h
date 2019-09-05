@@ -33,6 +33,20 @@ namespace gr
     class reader_impl : public reader
     {
       private:
+        class reader_log
+        {
+          private:
+            std::ofstream _log;
+
+          public:
+            reader_log();
+            ~reader_log();
+
+            void makeLog_init(int, int, int, int, int, int, int);
+            void makeLog_query(bool);
+            void makeLog_ack(void);
+        };
+
         int s_rate, d_rate,  n_cwquery_s,  n_cwack_s,n_p_down_s;
         float sample_d, n_data0_s, n_data1_s, n_cw_s, n_pw_s, n_delim_s, n_trcal_s;
         std::vector<float> data_0, data_1, cw, cw_ack, cw_query, delim, frame_sync, preamble, rtcal, trcal, query_bits, ack_bits, query_rep,nak, query_adjust_bits,p_down;
@@ -43,7 +57,6 @@ namespace gr
         void gen_query_adjust_bits();
         void crc_append(std::vector<float> & q);
 
-        std::ofstream log;
         int calc_usec(const struct timeval start, const struct timeval end);
         void print_results();
 

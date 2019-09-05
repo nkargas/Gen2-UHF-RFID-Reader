@@ -3,6 +3,6 @@ cd ../build
 cmake ../
 make
 make test
-make install
-ldconfig
+sudo make install
+sudo ldconfig
 cd ../apps

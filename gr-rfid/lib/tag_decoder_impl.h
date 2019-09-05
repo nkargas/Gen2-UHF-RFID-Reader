@@ -51,28 +51,49 @@ namespace gr
           private:
             gr_complex* _in;
             int _total_size;
+            int _mode;
             std::vector<float> _norm_in;
 
+            int _index;
             float _corr;
             gr_complex _complex_corr;
 
+            std::string _round_slot;
+            std::ofstream _log;
+            std::ofstream _detailed_log;
+
           public:
             sample_information();
-            sample_information(gr_complex*, int);
+            sample_information(gr_complex*, int, int, std::string, bool, bool);
             ~sample_information();
 
+            void set_index(int);
             void set_corr(float);
             void set_complex_corr(gr_complex);
 
             gr_complex in(int);
             int total_size(void);
+            int mode(void);
             float norm_in(int);
 
+            int index(void);
             float corr(void);
             gr_complex complex_corr(void);
+
+            std::string round_slot(void);
+
+            // log
+            void makeLog_init(void);
+            void makeLog_preamble(void);
+            void makeLog_RN16(std::vector<float>);
+            void makeLog_EPC(std::vector<float>, int);
+            void makeLog_nextSlot(char);
+            void makeLog_tagSync(float, float, int, int);
+            void makeLog_tagDetection(int, float, int, int);
         };
 
         // tag_decoder_impl.cc
+        bool detect_preamble(sample_information*);
         void decode_RN16(sample_information*, int, float*);
         void decode_EPC(sample_information*, int);
         void goto_next_slot(void);
@@ -85,20 +106,8 @@ namespace gr
         int decode_single_bit(sample_information* in, int, int, int);
 
         // debug_message
-        std::string current_round_slot;
-#ifdef __DEBUG_LOG__
-        std::ofstream log;
-        std::ofstream debug_log;
-#endif
-#ifdef DEBUG_TAG_DECODER_IMPL_INPUT
-        void debug_input(sample_information*, int, std::string);
-#endif
-#ifdef DEBUG_TAG_DECODER_IMPL_PREAMBLE
-        void debug_preamble(sample_information*, int, std::string, int);
-#endif
-#ifdef DEBUG_TAG_DECODER_IMPL_SAMPLE
-        void debug_sample(sample_information*, int, std::string, int);
-#endif
+        void debug_etc(sample_information*);
+        void debug_etc_execute(sample_information*, std::string, int, int)
 
       public:
         tag_decoder_impl(int, std::vector<int>);

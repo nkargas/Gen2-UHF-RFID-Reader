@@ -5,9 +5,7 @@
 
 #include "tag_decoder_impl.h"
 
-#define SHIFT_SIZE 2  // used in tag_detection
-
-//#define __DEBUG__
+#define SHIFT_SIZE 3  // used in tag_detection
 
 namespace gr
 {
@@ -26,7 +24,7 @@ namespace gr
       int max_index = 0;
 
       // compare all samples with sliding
-      for(int i=0 ; i<ys->total_size()-(n_samples_TAG_BIT*(TAG_PREAMBLE_BITS+n_expected_bit)) ; i++)  // i: start point
+      for(int i=0 ; i<n_samples_TAG_BIT*EXTRA_BITS ; i++)  // i: start point
       {
         // calculate average_amp (threshold)
         float average_amp = 0.0f;
@@ -65,17 +63,11 @@ namespace gr
         }
       }
 
-#ifdef __DEBUG__
-      debug_log << "threshold= " << threshold << std::endl;
-      debug_log << "corr= " << max_corr << std::endl;
-      debug_log << "preamble index= " << max_index << std::endl;
-      debug_log << "sample index= " << max_index + win_size << std::endl;
-#endif
-
-
       // check if correlation value exceeds threshold
-      if(max_corr > threshold) return max_index + win_size;
-      else return -1;
+      if(max_corr > threshold) ys->set_index(max_index + win_size);
+      else ys->set_index(-1);
+
+      ys->makeLog_tagSync(threshold, max_corr, max_index, win_size);
     }
 
     std::vector<float> tag_decoder_impl::tag_detection(sample_information* ys, int index, int n_expected_bit)
@@ -116,17 +108,6 @@ namespace gr
         max_corr_sum += max_corr;
         max_complex_corr_sum += max_complex_corr;
 
-        
-#ifdef __DEBUG__
-        debug_log << "[" << i+1 << "th bit]\tcorr=";
-        debug_log << std::left << std::setw(8) << max_corr;
-        debug_log << "\tcurr_shift=" << curr_shift << "\tshift=";
-        debug_log << std::left << std::setw(5) << shift;
-        debug_log << "\tdecoded_bit=" << max_index;
-        if(mask_level) debug_log << " (high start)" << std::endl;
-        else debug_log << " (low start)" << std::endl;
-#endif
-
         if(max_index){
           mask_level *= -1; // change mask_level(start level of the next bit) when the decoded bit is 1
           complex_mask_level *= -1;
@@ -134,6 +115,7 @@ namespace gr
 
         decoded_bits.push_back(max_index);
         shift += curr_shift;  // update the shift value
+        ys->makeLog_tagSync(i, max_corr, curr_shift, shift, max_index);
       }
 
       ys->set_corr(max_corr_sum/n_expected_bit);
