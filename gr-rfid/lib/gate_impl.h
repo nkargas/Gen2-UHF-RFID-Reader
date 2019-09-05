@@ -36,15 +36,21 @@ namespace gr {
 
         int n_samples, n_samples_T1, n_samples_TAG_BIT, n_samples_PW;
 
-        gr_complex avg_zero;
-        gr_complex avg_cw;
 
-        int cw_count;
+        gr_complex avg_iq = gr_complex(0.0,0.0);
+        gr_complex avg_dc;
+
+        int iq_count = 0;
         int max_count;
         int num_pulses;
 
+        float amp_pos_threshold = 0;
+        float amp_neg_threshold = 0;
+
+
         SIGNAL_STATE signal_state;
 
+        std::ofstream log;
        public:
         gate_impl(int sample_rate);
         ~gate_impl();

@@ -192,6 +192,7 @@ namespace gr
 
       std::cout << "RN16 decoded | ";
       reader_state->gen2_logic_status = SEND_ACK;
+      
     }
 
 
@@ -203,7 +204,7 @@ namespace gr
       // convert EPC_bits from float to char in order to use Buettner's function
 
 #ifdef __DEBUG_LOG__
-
+     
       log << "│ EPC=";
       debug_log << "EPC=";
 
