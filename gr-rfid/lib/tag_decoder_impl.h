@@ -64,7 +64,7 @@ namespace gr
 
           public:
             sample_information();
-            sample_information(gr_complex*, int, int, std::string, bool, bool);
+            sample_information(gr_complex*, int, int, std::string);
             ~sample_information();
 
             void set_index(int);
@@ -89,14 +89,14 @@ namespace gr
             void makeLog_EPC(std::vector<float>, int);
             void makeLog_nextSlot(char);
             void makeLog_tagSync(float, float, int, int);
-            void makeLog_tagDetection(int, float, int, int);
+            void makeLog_tagDetection(int, float, float, int, int, int);
         };
 
         // tag_decoder_impl.cc
         bool detect_preamble(sample_information*);
-        void decode_RN16(sample_information*, int, float*);
-        void decode_EPC(sample_information*, int);
-        void goto_next_slot(void);
+        void decode_RN16(sample_information*, float*);
+        void decode_EPC(sample_information*);
+        void goto_next_slot(sample_information*);
         int check_crc(char*, int);
 
         // tag_decoder_decoder.cc
@@ -107,7 +107,7 @@ namespace gr
 
         // debug_message
         void debug_etc(sample_information*);
-        void debug_etc_execute(sample_information*, std::string, int, int)
+        void debug_etc_execute(sample_information*, std::string, int, int);
 
       public:
         tag_decoder_impl(int, std::vector<int>);

@@ -31,16 +31,27 @@ namespace gr {
     class gate_impl : public gate
     {
       private:
+        class gate_log
+        {
+          private:
+            std::ofstream _log;
+
+          public:
+            gate_log();
+            ~gate_log();
+
+            void makeLog_init(int, gr_complex);
+            void makeLog_nextSlot(char);
+        };
 
         enum SIGNAL_STATE {NEG_EDGE, POS_EDGE};
 
         int n_samples, n_samples_T1, n_samples_TAG_BIT, n_samples_PW;
 
 
-        gr_complex avg_iq = gr_complex(0.0,0.0);
+        gr_complex avg_cw = gr_complex(0.0,0.0);
         gr_complex avg_dc;
 
-        int iq_count = 0;
         int max_count;
         int num_pulses;
 
@@ -50,7 +61,6 @@ namespace gr {
 
         SIGNAL_STATE signal_state;
 
-        std::ofstream log;
        public:
         gate_impl(int sample_rate);
         ~gate_impl();

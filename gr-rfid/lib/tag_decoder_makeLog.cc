@@ -100,7 +100,7 @@ namespace gr
 
     void tag_decoder_impl::sample_information::makeLog_nextSlot(char ch)
     {
-      if(_make_log)
+      if(make_log)
       {
         _log << ch << "──────────────────────────────────────────────────" << std::endl;
       }
@@ -108,7 +108,7 @@ namespace gr
 
     void tag_decoder_impl::sample_information::makeLog_tagSync(float threshold, float max_corr, int max_index, int win_size)
     {
-      if(_make_detailed_log)
+      if(make_detailed_log)
       {
         _detailed_log << "threshold= " << threshold << std::endl;
         _detailed_log << "corr= " << max_corr << std::endl;
@@ -117,9 +117,9 @@ namespace gr
       }
     }
 
-    void tag_decoder_impl::sample_information::makeLog_tagDetection(int i, float curr_shift, int shift, int max_index)
+    void tag_decoder_impl::sample_information::makeLog_tagDetection(int i, float max_corr, float curr_shift, int shift, int max_index, int mask_level)
     {
-      if(_make_detailed_log)
+      if(make_detailed_log)
       {
         _detailed_log << "[" << i+1 << "th bit]\tcorr=";
         _detailed_log << std::left << std::setw(8) << max_corr;

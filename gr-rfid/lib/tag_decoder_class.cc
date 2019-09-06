@@ -18,12 +18,9 @@ namespace gr
       _norm_in.clear();
 
       _corr = 0;
-
-      log = NULL;
-      make_log = false;
     }
 
-    tag_decoder_impl::sample_information::sample_information(gr_complex* __in, int __total_size, int __mode, std::string __round_slot, bool __make_log, bool __make_detailed_log)
+    tag_decoder_impl::sample_information::sample_information(gr_complex* __in, int __total_size, int __mode, std::string __round_slot)
     // mode: 0:RN16, 1:EPC
     {
       _in = __in;
@@ -37,7 +34,7 @@ namespace gr
       _corr = 0;
       _complex_corr = std::complex<float>(0.0,0.0);
 
-      _round_slot = __round_slot
+      _round_slot = __round_slot;
       if(make_log) _log.open(log_file_path, std::ios::app);
       if(make_detailed_log) _detailed_log.open((debug_folder_path+"log/"+_round_slot).c_str(), std::ios::app);
     }

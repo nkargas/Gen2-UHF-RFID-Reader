@@ -70,8 +70,7 @@ namespace gr
         else if(reader_state->decoder_status == DECODER_DECODE_EPC) mode = 2;
 
         sample_information ys((gr_complex*)input_items[0], ninput_items[0], mode,
-          (std::to_string(reader_state->reader_stats.cur_inventory_round)+"_"+std::to_string(reader_state->reader_stats.cur_slot_number)).c_str(),
-          make_log, make_detailed_log);
+          (std::to_string(reader_state->reader_stats.cur_inventory_round)+"_"+std::to_string(reader_state->reader_stats.cur_slot_number)).c_str());
         ys.makeLog_init();
 
         if(detect_preamble(&ys))
@@ -82,7 +81,7 @@ namespace gr
         else
         {
           std::cout << "\t\t\t\t\tPreamble FAIL!!";
-          goto_next_slot();
+          goto_next_slot(&ys);
         }
         debug_etc(&ys);
 
@@ -105,9 +104,9 @@ namespace gr
       else return true;
     }
 
-    void tag_decoder_impl::decode_RN16(sample_information* ys, int index, float* out)
+    void tag_decoder_impl::decode_RN16(sample_information* ys, float* out)
     {
-      std::vector<float> RN16_bits = tag_detection(ys, index, RN16_BITS);
+      std::vector<float> RN16_bits = tag_detection(ys, ys->index(), RN16_BITS);
 
       // write RN16_bits to the next block
       int written = 0;
@@ -123,9 +122,9 @@ namespace gr
       reader_state->gen2_logic_status = SEND_ACK;
     }
 
-    void tag_decoder_impl::decode_EPC(sample_information* ys, int index)
+    void tag_decoder_impl::decode_EPC(sample_information* ys)
     {
-      std::vector<float> EPC_bits = tag_detection(ys, index, EPC_BITS);
+      std::vector<float> EPC_bits = tag_detection(ys, ys->index(), EPC_BITS);
 
       // convert EPC_bits from float to char in order to use Buettner's function
       for(int i=0 ; i<EPC_BITS ; i++)
@@ -156,15 +155,15 @@ namespace gr
         std::cout << "\t\t\t\t\tCRC FAIL!!";
       }
 
-      goto_next_slot();
+      goto_next_slot(ys);
     }
 
-    void tag_decoder_impl::goto_next_slot(void)
+    void tag_decoder_impl::goto_next_slot(sample_information* ys)
     {
       reader_state->reader_stats.cur_slot_number++;
       if(reader_state->reader_stats.cur_slot_number > reader_state->reader_stats.max_slot_number)
       {
-        ys->makeLog_nextslot('└');
+        ys->makeLog_nextSlot('└');
         reader_state->reader_stats.cur_inventory_round ++;
         reader_state->reader_stats.cur_slot_number = 1;
 
@@ -177,7 +176,7 @@ namespace gr
       }
       else
       {
-        ys->makeLog_nextslot('├');
+        ys->makeLog_nextSlot('├');
         reader_state->gen2_logic_status = SEND_QUERY_REP;
       }
     }

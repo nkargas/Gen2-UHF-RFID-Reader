@@ -115,7 +115,7 @@ namespace gr
 
         decoded_bits.push_back(max_index);
         shift += curr_shift;  // update the shift value
-        ys->makeLog_tagSync(i, max_corr, curr_shift, shift, max_index);
+        ys->makeLog_tagDetection(i, max_corr, curr_shift, shift, max_index, mask_level);
       }
 
       ys->set_corr(max_corr_sum/n_expected_bit);

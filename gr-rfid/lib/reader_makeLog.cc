@@ -9,12 +9,12 @@ namespace gr
 {
   namespace rfid
   {
-    void reader_impl::reader_log()
+    reader_impl::reader_log::reader_log()
     {
       if(make_log) _log.open(log_file_path, std::ios::app);
     }
 
-    void reader_impl::~reader_log()
+    reader_impl::reader_log::~reader_log()
     {
       if(make_log) _log.close();
     }

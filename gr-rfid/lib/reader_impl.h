@@ -22,6 +22,7 @@
 #define INCLUDED_RFID_READER_IMPL_H
 
 #include <rfid/reader.h>
+#include "rfid/global_vars.h"
 #include <vector>
 #include <queue>
 #include <fstream>

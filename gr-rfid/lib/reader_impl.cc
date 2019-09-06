@@ -180,17 +180,17 @@ namespace gr
 
       if(reader_state->gen2_logic_status != IDLE)
       {
-        reader_log ys();
+        reader_log ys;
 
         if(reader_state->gen2_logic_status == START)
         {
           transmit(out, &written, cw_ack);
           reader_state->gen2_logic_status = IDLE;
-          ys->makeLog_init(n_delim_s, n_data0_s, n_data1_s, n_trcal_s, n_cwquery_s, n_cwack_s, sample_d);
+          ys.makeLog_init(n_delim_s, n_data0_s, n_data1_s, n_trcal_s, n_cwquery_s, n_cwack_s, sample_d);
         }
         else if(reader_state->gen2_logic_status == SEND_QUERY)
         {
-          ys->makeLog_query(true);
+          ys.makeLog_query(true);
           std::cout << std::endl << "[" << reader_state->reader_stats.cur_inventory_round << "_" << reader_state->reader_stats.cur_slot_number << "] ";
           reader_state->reader_stats.n_queries_sent +=1;
 
@@ -209,7 +209,7 @@ namespace gr
         }
         else if(reader_state->gen2_logic_status == SEND_QUERY_REP)
         {
-          ys->makeLog_query(false);
+          ys.makeLog_query(false);
           std::cout << std::endl << "[" << reader_state->reader_stats.cur_inventory_round << "_" << reader_state->reader_stats.cur_slot_number << "] ";
           reader_state->reader_stats.n_queries_sent +=1;
 
@@ -226,7 +226,7 @@ namespace gr
         }
         else if(reader_state->gen2_logic_status == SEND_ACK && ninput_items[0] == RN16_BITS - 1)
         {
-          ys->makeLog_ack();
+          ys.makeLog_ack();
           reader_state->reader_stats.n_ack_sent +=1;
 
           // Controls the other two blocks
