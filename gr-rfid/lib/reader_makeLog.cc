@@ -43,14 +43,12 @@ namespace gr
     {
       if(make_log)
       {
-        if(!repeat) _log << std::endl << "┌──────────────────────────────────────────────────" << std::endl;
+        if(!repeat) _log << std::endl << "##################################################" << std::endl;
 
-        _log << "│ Inventory Round: " << reader_state->reader_stats.cur_inventory_round << " | Slot Number: " << reader_state->reader_stats.cur_slot_number << std::endl;
+        _log << "Inventory Round: " << reader_state->reader_stats.cur_inventory_round << " / Slot Number: " << reader_state->reader_stats.cur_slot_number << std::endl;
 
-        if(!repeat) _log << "│ Send Query | Q= " << FIXED_Q << std::endl;
-        else _log << "│ Send QueryRep" << std::endl;
-
-        _log << "├──────────────────────────────────────────────────" << std::endl;
+        if(!repeat) _log << "Send Query (Q=" << FIXED_Q << ")" << std::endl;
+        else _log << "Send QueryRep" << std::endl;
       }
     }
 
@@ -58,8 +56,7 @@ namespace gr
     {
       if(make_log)
       {
-        _log << "│ Send ACK" << std::endl;
-        _log << "├──────────────────────────────────────────────────" << std::endl;
+        _log << std::endl << std::endl << "Send ACK" << std::endl;
       }
     }
   }

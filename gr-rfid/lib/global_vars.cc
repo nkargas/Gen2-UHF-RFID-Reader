@@ -37,6 +37,7 @@ namespace gr {
       reader_state-> reader_stats.n_queries_sent = 0;
       reader_state-> reader_stats.n_ack_sent = 0;
       reader_state-> reader_stats.n_epc_correct = 0;
+      reader_state-> reader_stats.n_gate_fail = 0;
 
       std::vector<int>  unique_tags_round;
        std::map<int,int> tag_reads;

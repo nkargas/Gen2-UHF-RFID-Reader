@@ -32,9 +32,6 @@
 //#define DEBUG_TAG_DECODER_IMPL_PREAMBLE
 //#define DEBUG_TAG_DECODER_IMPL_SAMPLE
 
-#define __DEBUG_LOG__
-
-
 namespace gr
 {
   namespace rfid
@@ -87,7 +84,7 @@ namespace gr
             void makeLog_preamble(void);
             void makeLog_RN16(std::vector<float>);
             void makeLog_EPC(std::vector<float>, int);
-            void makeLog_nextSlot(char);
+            void makeLog_nextSlot(void);
             void makeLog_tagSync(float, float, int, int);
             void makeLog_tagDetection(int, float, float, int, int, int);
         };

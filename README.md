@@ -83,17 +83,27 @@ Change addr value with the address of your USRP reader. (default: 192.168.255.3)
  * line 73: FIXED_Q  
 The number of slot is fixed by 2^(FIXED_Q). (default FIXED_Q: 0 / default slot number: 1)
 
- * line 77: MAX_NUM_QUERIES  
+ * line 78: MAX_NUM_QUERIES  
 The program stops after sending this amount of queries. (dafault: 1000)
 
-* line 163: log_file_path  
+* line 164: log_file_path  
 Set the name of the log file. You have to change reader.sh file also. (default: log)
 
- * line 164: result_file_path  
+ * line 165: result_file_path  
 Set the name of the result file. You have to change reader.sh file also. (default: result)
 
- * line 165: debug_folder_path  
+ * line 166: debug_folder_path  
 Set the name of the folder which saves the debug files. You have to change reader.sh file also. (dafault: debug_data/)
+
+ * line 167: make_log  
+Set true if you want to make log file(line 164). (default: true)
+
+ * line 168: make_detailed_log  
+Set true if you want to make detailed log file especially about the decoding process. (default: false)
+
+### gr-rfid/lib/gate_impl.h
+ * line 29: DEBUG_GATE_IMPL_SAMPLE  
+Annotate this line, if you don't want to make the debug files about the samples received in gate block. (dafault: annotated)
 
 ### gr-rfid/lib/tag_decoder_impl.h
  * line 31: DEBUG_TAG_DECODER_IMPL_INPUT  
@@ -128,6 +138,8 @@ As the result of the execution, below files are created.
 Logs the flow of the program. It includes decoded RN16 bits and EPC bits.
  * gr-rfid/apps/result  
 Logs the result of the program. It includes the detected tag IDs and the number of reads.
+ * gr-rfid/apps/debug_data/gate/(inventory_round)_(slot_number)  
+Logs the absolute value of the samples from each inventory round and slot number.
  * gr-rfid/apps/debug_data/log/(inventory_round)_(slot_number)  
 Logs the detailed decoding process of RN16 bits and EPC bits.
  * gr-rfid/apps/debug_data/(RN16/EPC)_(input/preamble/sample)/(inventory_round)_(slot_number)  
@@ -164,11 +176,11 @@ Jeong SinGi (e-mail: jsgnwk@csi.skku.edu)
 Computer Science and Intelligence Lab in Sungkyunkwan University, Suwon, Republic of Korea(ROK, South Korea).
 
  * Co-developed with  
-Lee JiHoon (e-mail: ulla4571@csi.skku.edu)  
+Shin JaeMin (e-mail: alex9395@csi.skku.edu)  
 Computer Science and Intelligence Lab in Sungkyunkwan University, Suwon, Republic of Korea(ROK, South Korea).
 
- * Co-worked with  
-Shin JaeMin (e-mail: alex9395@csi.skku.edu)  
+ * Co-developed with  
+Lee JiHoon (e-mail: ulla4571@csi.skku.edu)  
 Computer Science and Intelligence Lab in Sungkyunkwan University, Suwon, Republic of Korea(ROK, South Korea).
 
  * Supervised by  

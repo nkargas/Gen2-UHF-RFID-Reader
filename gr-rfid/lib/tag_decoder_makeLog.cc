@@ -24,17 +24,19 @@ namespace gr
 
     void tag_decoder_impl::sample_information::makeLog_preamble(void)
     {
+      if(make_log) _log << std::endl;
+      
       if(_index == -1)
       {
         if(make_log)
-          _log << "│ Preamble detection fail.." << std::endl;
+          _log << "Preamble detection fail.." << std::endl;
         if(make_detailed_log)
         _detailed_log << "Preamble detection fail" << std::endl << std::endl;
       }
       else
       {
         if(make_log)
-          _log << "│ Preamble detected!" << std::endl;
+          _log << "Preamble detected!" << std::endl;
       }
     }
 
@@ -42,15 +44,13 @@ namespace gr
     {
       if(make_log)
       {
-        _log << "│ RN16=";
+        _log << "RN16=";
 
         for(int i=0 ; i<RN16_BITS ; i++)
         {
           if(i % 4 == 0) _log << " ";
           _log << RN16_bits[i];
         }
-
-        _log << std::endl << "├──────────────────────────────────────────────────" << std::endl;
       }
       if(make_detailed_log)
       {
@@ -70,17 +70,17 @@ namespace gr
     {
       if(make_log)
       {
-        _log << "│ EPC=";
+        _log << "EPC=";
 
         for(int i=0 ; i<EPC_BITS ; i++)
         {
           if(i % 4 == 0) _log << " ";
           _log << EPC_bits[i];
-          if(i % 16 == 15) _log << std::endl << "│     ";
+          if(i % 16 == 15) _log << std::endl << "    ";
         }
 
-        if(tag_id == -1) _log << " CRC check fail.." << std::endl;
-        else _log << " CRC check success! Tag ID= " << tag_id << std::endl;
+        if(tag_id == -1) _log << "CRC check fail.." << std::endl;
+        else _log << "CRC check success! Tag ID= " << tag_id << std::endl;
       }
       if(make_detailed_log)
       {
@@ -98,11 +98,11 @@ namespace gr
       }
     }
 
-    void tag_decoder_impl::sample_information::makeLog_nextSlot(char ch)
+    void tag_decoder_impl::sample_information::makeLog_nextSlot(void)
     {
       if(make_log)
       {
-        _log << ch << "──────────────────────────────────────────────────" << std::endl;
+        _log << "##################################################" << std::endl;
       }
     }
 

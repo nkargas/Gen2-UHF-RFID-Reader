@@ -160,10 +160,10 @@ namespace gr
 
     void tag_decoder_impl::goto_next_slot(sample_information* ys)
     {
+      ys->makeLog_nextSlot();
       reader_state->reader_stats.cur_slot_number++;
       if(reader_state->reader_stats.cur_slot_number > reader_state->reader_stats.max_slot_number)
       {
-        ys->makeLog_nextSlot('└');
         reader_state->reader_stats.cur_inventory_round ++;
         reader_state->reader_stats.cur_slot_number = 1;
 
@@ -176,7 +176,6 @@ namespace gr
       }
       else
       {
-        ys->makeLog_nextSlot('├');
         reader_state->gen2_logic_status = SEND_QUERY_REP;
       }
     }

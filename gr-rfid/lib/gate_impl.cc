@@ -28,7 +28,7 @@
 #include <stdio.h>
 
 #define FIRST_DC_SAMPLES (20000)
-#define AMP_LOWBOUND (0.001) //this will let us find the lowest bound
+#define AMP_LOWBOUND (0.001)
 #define MIN_PULSE (5)
 #define CW_LEN (200)
 #define T1_LEN (400)
@@ -37,9 +37,9 @@
 #define AMP_POS_THRESHOLD_RATE (0.8)
 #define AMP_NEG_THRESHOLD_RATE (0.2)
 
-#define MAX_SEARCH_READ_CW  (4000)
-#define MAX_SEARCH_TRACK (10000)
-#define MAX_SEARCH_READY (8000)
+#define MAX_SEARCH_READ_CW (20000)  // (from) tag command end (to) reader pulse start
+#define MAX_SEARCH_TRACK (5000)    // (from) reader pusle start (to) MIN_PULSE'th reader pulse
+#define MAX_SEARCH_READY (5000)     // (from) MIN_PULSE'th reader pulse (to) tag command start
 
 namespace gr
 {
@@ -108,7 +108,7 @@ namespace gr
       }
       else if(reader_state->gate_status != GATE_CLOSED)
       {
-        gate_log ys;
+        gate_log ys((std::to_string(reader_state->reader_stats.cur_inventory_round)+"_"+std::to_string(reader_state->reader_stats.cur_slot_number)).c_str());
 
         for(int i=0 ; i<ninput_items[0] ; i++)
         {
@@ -127,8 +127,10 @@ namespace gr
 
           if(reader_state->gate_status == GATE_SEEK)
           {
+            ys.makeLog_seek();
             avg_cw = gr_complex(0.0, 0.0);
             n_samples = 0;
+            check = false;
             amp_pos_threshold = 0;
             amp_neg_threshold = 0;
             max_count = MAX_SEARCH_READ_CW;
@@ -137,17 +139,19 @@ namespace gr
 
           if(reader_state->gate_status == GATE_READ_CW)
           {
+            ys.makeLog(std::abs(sample));
             if(std::abs(sample) < AMP_LOWBOUND) continue;
-
+            
             if(--max_count <= 0)
             {
-              gate_fail();
+              gate_fail(1);
               number_samples_consumed = i-1;
               break;
             }
             else if(std::abs(sample) < amp_neg_threshold)
               // reader command starts
             {
+              ys.makeLog_readCWFinish(avg_cw, amp_pos_threshold, amp_neg_threshold);
               signal_state = NEG_EDGE;
               num_pulses = 0;
               max_count = MAX_SEARCH_TRACK;
@@ -174,9 +178,10 @@ namespace gr
           }
           else if(reader_state->gate_status == GATE_TRACK)
           {
+            ys.makeLog(std::abs(sample));
             if(--max_count <= 0)
             {
-              gate_fail();
+              gate_fail(2);
               number_samples_consumed = i-1;
               break;
             }
@@ -192,7 +197,7 @@ namespace gr
               signal_state = NEG_EDGE;
               if(++num_pulses > MIN_PULSE)
               {
-                std::cout << "Command found | ";
+                ys.makeLog_trackFinish();
                 n_samples = 0;
                 max_count = MAX_SEARCH_READY;
                 reader_state->gate_status = GATE_READY;
@@ -201,9 +206,10 @@ namespace gr
           }
           else if(reader_state->gate_status == GATE_READY)
           {
+            ys.makeLog(std::abs(sample));
             if(--max_count <= 0)
             {
-              gate_fail();
+              gate_fail(3);
               number_samples_consumed = i-1;
               break;
             }
@@ -216,6 +222,7 @@ namespace gr
             else if(++n_samples > T1_LEN)
               // reader command finished & wait T1_time
             {
+              ys.makeLog_readyFinish();
               n_samples = 0;
               reader_state->gate_status = GATE_OPEN;
               continue;
@@ -223,6 +230,7 @@ namespace gr
           }
           else if(reader_state->gate_status == GATE_OPEN)
           {
+            ys.makeLog(std::abs(sample));
             if(++n_samples > reader_state->n_samples_to_ungate)
             {
               reader_state->gate_status = GATE_CLOSED;
@@ -240,16 +248,20 @@ namespace gr
       return written;
     }
 
-    void gate_impl::gate_fail(void)
+    void gate_impl::gate_fail(int type)
     {
       gate_log ys;
-      std::cout << "Gate FAIL!!";
+      ys.makeLog_nextSlot(type);
+
+      if(type == 1) std::cout << "\tPulse detection FAIL!!";
+      else if(type == 2) std::cout << "\t\tCommand detection FAIL!!";
+      else if(type == 3) std::cout << "\t\t\tToo long command!!";
+      reader_state->reader_stats.n_gate_fail++;
       reader_state->gate_status = GATE_CLOSED;
 
       reader_state->reader_stats.cur_slot_number++;
       if(reader_state->reader_stats.cur_slot_number > reader_state->reader_stats.max_slot_number)
       {
-        ys.makeLog_nextSlot('└');
         reader_state->reader_stats.cur_inventory_round ++;
         reader_state->reader_stats.cur_slot_number = 1;
 
@@ -262,7 +274,6 @@ namespace gr
       }
       else
       {
-        ys.makeLog_nextSlot('├');
         reader_state->gen2_logic_status = SEND_QUERY_REP;
       }
     }

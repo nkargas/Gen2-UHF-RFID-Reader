@@ -38,6 +38,7 @@ namespace gr {
     {
       int n_queries_sent;
       int n_ack_sent;
+      int n_gate_fail;
 
       int cur_inventory_round;
       int cur_slot_number;
@@ -74,7 +75,7 @@ namespace gr {
 
     // Termination criteria
     // const int MAX_INVENTORY_ROUND = 50;
-    const int MAX_NUM_QUERIES     = 2000;     // Stop after MAX_NUM_QUERIES have been sent
+    const int MAX_NUM_QUERIES     = 1000;     // Stop after MAX_NUM_QUERIES have been sent
 
     // valid values for Q
     const int Q_VALUE [16][4] =
@@ -164,7 +165,7 @@ namespace gr {
     const std::string result_file_path = "result";
     const std::string debug_folder_path = "debug_data/";
     const bool make_log = true;
-    const bool make_detailed_log = true;
+    const bool make_detailed_log = false;
   } // namespace rfid
 } // namespace gr
 

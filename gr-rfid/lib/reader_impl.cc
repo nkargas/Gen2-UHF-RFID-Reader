@@ -190,7 +190,7 @@ namespace gr
         }
         else if(reader_state->gen2_logic_status == SEND_QUERY)
         {
-          ys.makeLog_query(true);
+          ys.makeLog_query(false);
           std::cout << std::endl << "[" << reader_state->reader_stats.cur_inventory_round << "_" << reader_state->reader_stats.cur_slot_number << "] ";
           reader_state->reader_stats.n_queries_sent +=1;
 
@@ -209,7 +209,7 @@ namespace gr
         }
         else if(reader_state->gen2_logic_status == SEND_QUERY_REP)
         {
-          ys.makeLog_query(false);
+          ys.makeLog_query(true);
           std::cout << std::endl << "[" << reader_state->reader_stats.cur_inventory_round << "_" << reader_state->reader_stats.cur_slot_number << "] ";
           reader_state->reader_stats.n_queries_sent +=1;
 
@@ -224,7 +224,7 @@ namespace gr
           std::cout << "QueryRep | ";
           reader_state->gen2_logic_status = IDLE;
         }
-        else if(reader_state->gen2_logic_status == SEND_ACK && ninput_items[0] == RN16_BITS - 1)
+        else if(reader_state->gen2_logic_status == SEND_ACK && ninput_items[0] == RN16_BITS)
         {
           ys.makeLog_ack();
           reader_state->reader_stats.n_ack_sent +=1;
@@ -270,6 +270,7 @@ namespace gr
         result << reader_state->reader_stats.ack_sent[i] << " ";
       result << std::endl << "│ Current Inventory round: " << reader_state->reader_stats.cur_inventory_round << std::endl;
       result << "├──────────────────────────────────────────────────" << std::endl;
+      result << "│ Number of gate fail: " << reader_state->reader_stats.n_gate_fail << std::endl;
       result << "│ Number of correctly decoded EPC: " << reader_state->reader_stats.n_epc_correct << std::endl;
       result << "│ Number of unique tags: " << reader_state->reader_stats.tag_reads.size() << std::endl;
 
