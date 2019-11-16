@@ -129,8 +129,8 @@ namespace gr {
     // QueryAdjust command
     const int QADJ_CODE[4]   = {1,0,0,1};
 
-    // 110 Increment by 1, 000 unchanged, 010 decrement by 1
-    const int Q_UPDN[3][3]  = { {1,1,0}, {0,0,0}, {0,1,0} };
+    // 110 Increment by 1, 000 unchanged, 011 decrement by 1
+    const int Q_UPDN[3][3]  = { {1,1,0}, {0,0,0}, {0,1,1} };
 
     // FM0 encoding preamble sequences
     const int TAG_PREAMBLE[] = {1,1,0,1,0,0,1,0,0,0,1,1};
