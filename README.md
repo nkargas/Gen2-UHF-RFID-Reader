@@ -81,7 +81,11 @@ Run the software for a few seconds (~5s). A file will be created in misc/data di
 - /misc/data/gate 
 - /misc/data/decoder  
 - /misc/data/reader
-    
+
+Useful discussions on software issues:
+
+https://github.com/nkargas/Gen2-UHF-RFID-Reader/issues/4
+https://github.com/nkargas/Gen2-UHF-RFID-Reader/issues/10
 
     
 ## Hardware:
