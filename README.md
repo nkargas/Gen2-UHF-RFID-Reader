@@ -38,7 +38,7 @@ The project is based on the RFID Gen2 Reader available at https://github.com/ran
 If you use an SBX daughterboard uncomment  #self.source.set_auto_dc_offset(False) in reader.py file
 cd Gen2-UHF-RFID-Reader/gr-rfid/apps/    
 sudo GR_SCHEDULER=STS nice -n -20 python ./reader.py     
-After termination, part of EPC message (hex value of EPC[104:111]) of identified Tags is printed.  
+After termination, part of EPC message (EPC[104:111]) of identified Tags is printed.  
 
 - Offline:  
     Change DEBUG variable in apps/reader.py to TRUE (A test file already exists named file_source_test).  
