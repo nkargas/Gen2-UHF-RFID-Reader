@@ -93,6 +93,7 @@ https://github.com/nkargas/Gen2-UHF-RFID-Reader/issues/4
 
 https://github.com/nkargas/Gen2-UHF-RFID-Reader/issues/10
 
+## Frequently asked questions:
     
 ## Hardware:
 
