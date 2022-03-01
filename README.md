@@ -27,7 +27,7 @@ The project is based on the RFID Gen2 Reader available at https://github.com/ran
 - Set tx amplitude in apps/reader.py (default: 0.1)
 - Set rx gain in apps/reader.py (default: 20)
 - Set maximum number of queries in include/global_vars.h (default:1000)
-- To decode multiple tags, change const int FIXED_Q so that you increase the number of slots per inventory round.
+- **To decode multiple tags**, change const int FIXED_Q so that you increase the number of slots per inventory round.
   (In global_vars.h: const int FIXED_Q = 0;)
 
 
@@ -99,6 +99,8 @@ https://github.com/nkargas/Gen2-UHF-RFID-Reader/issues/10
   - 1x USRPN200/N210  
   - 1x RFX900/SBX daughterboard  
   - 2x circular polarized antennas  
+
+<img src="./example_setup.png" width="300">
 
 ## Tested on:
   Ubuntu 14.04 64-bit  
