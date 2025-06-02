@@ -109,6 +109,6 @@ https://github.com/nkargas/Gen2-UHF-RFID-Reader/issues/10
 N. Kargas, F. Mavromatis and A. Bletsas, "Fully-Coherent Reader with Commodity SDR for Gen2 FM0 and Computational RFID", IEEE Wireless Communications Letters (WCL), Vol. 4, No. 6, pp. 617-620, Dec. 2015. 
 
 ## Contact:
-  Nikos Kargas (email: karga005@umn.edu)  
+  Nikos Kargas (email: kargasnk@gmail.com) 
 
 This research has been co-financed by the European Union (European Social Fund-ESF) and Greek national funds through the Operational Program Education and Lifelong Learning of the National Strategic Reference Framework (NSRF) - Research Funding Program: THALES-Investing in knowledge society through the European Social Fund.
